@@ -1401,3 +1401,92 @@ body.tela-acesso {
         font-size: 1.5rem;
     }
 }
+
+/* --- Estilos para Listagem de Cadastros --- */
+.divisor-modal {
+    height: 1px;
+    background: var(--cor-borda);
+    margin: var(--espaco-md) 0;
+}
+
+.secao-lista h4 {
+    font-family: var(--fonte-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--texto-terciario);
+    margin-bottom: var(--espaco-sm);
+}
+
+.lista-itens {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.lista-itens::-webkit-scrollbar {
+    width: 4px;
+}
+
+.lista-itens::-webkit-scrollbar-thumb {
+    background: var(--cor-borda);
+    border-radius: 4px;
+}
+
+.item-cadastro {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    transition: all var(--duracao-rapida) var(--curva-suave);
+    margin-bottom: 8px;
+}
+
+.item-cadastro:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--cor-borda-clara);
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.item-nome {
+    font-size: 0.9rem;
+    font-weight: var(--peso-medio);
+    color: var(--texto-principal);
+}
+
+.item-detalhe {
+    font-size: 0.75rem;
+    color: var(--texto-secundario);
+}
+
+.btn-deletar {
+    opacity: 0.4;
+    transition: opacity var(--duracao-rapida);
+    padding: 4px;
+    color: var(--cor-destaque);
+    cursor: pointer;
+}
+
+.item-cadastro:hover .btn-deletar {
+    opacity: 1;
+}
+
+.lista-vazia {
+    padding: var(--espaco-md);
+    text-align: center;
+    color: var(--texto-terciario);
+    font-size: 0.875rem;
+    font-style: italic;
+    border: 1px dashed var(--cor-borda);
+    border-radius: var(--raio-sm);
+}
