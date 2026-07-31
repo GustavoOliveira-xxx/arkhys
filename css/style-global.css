@@ -1402,91 +1402,42 @@ body.tela-acesso {
     }
 }
 
-/* --- Estilos para Listagem de Cadastros --- */
-.divisor-modal {
-    height: 1px;
-    background: var(--cor-borda);
-    margin: var(--espaco-md) 0;
+/* --- Estilos para o Modal de Gerenciamento Unificado --- */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(5, 4, 7, 0.9);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
 }
-
-.secao-lista h4 {
-    font-family: var(--fonte-mono);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--texto-terciario);
-    margin-bottom: var(--espaco-sm);
-}
-
-.lista-itens {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espaco-xs);
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-.lista-itens::-webkit-scrollbar {
-    width: 4px;
-}
-
-.lista-itens::-webkit-scrollbar-thumb {
-    background: var(--cor-borda);
-    border-radius: 4px;
-}
-
-.item-cadastro {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
+.modal-gerenciador {
+    width: 100%; max-width: 700px;
+    background: var(--cor-superficie-alta);
     border: 1px solid var(--cor-borda);
-    border-radius: var(--raio-sm);
-    transition: all var(--duracao-rapida) var(--curva-suave);
-    margin-bottom: 8px;
+    border-radius: var(--raio-lg);
+    display: flex; flex-direction: column;
+    max-height: 90vh; overflow: hidden;
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
 }
-
-.item-cadastro:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--cor-borda-clara);
+.cabecalho-modal {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--cor-borda);
+    display: flex; justify-content: space-between; align-items: center;
 }
-
-.item-info {
-    display: flex;
-    flex-direction: column;
+.abas-navegacao { display: flex; gap: 8px; overflow-x: auto; }
+.aba-item {
+    padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem;
+    color: var(--texto-secundario); cursor: pointer; transition: 0.2s;
 }
-
-.item-nome {
-    font-size: 0.9rem;
-    font-weight: var(--peso-medio);
-    color: var(--texto-principal);
+.aba-item.ativa { background: var(--cor-destaque-fraco); color: var(--texto-principal); }
+.conteudo-gerenciador { padding: 1.5rem; overflow-y: auto; flex: 1; }
+.topo-lista, .topo-form { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.item-cadastro {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem; background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--cor-borda); border-radius: 12px; margin-bottom: 8px;
 }
-
-.item-detalhe {
-    font-size: 0.75rem;
-    color: var(--texto-secundario);
-}
-
-.btn-deletar {
-    opacity: 0.4;
-    transition: opacity var(--duracao-rapida);
-    padding: 4px;
-    color: var(--cor-destaque);
-    cursor: pointer;
-}
-
-.item-cadastro:hover .btn-deletar {
-    opacity: 1;
-}
-
-.lista-vazia {
-    padding: var(--espaco-md);
-    text-align: center;
-    color: var(--texto-terciario);
-    font-size: 0.875rem;
-    font-style: italic;
-    border: 1px dashed var(--cor-borda);
-    border-radius: var(--raio-sm);
-}
+.item-cadastro:hover { transform: translateX(5px); background: rgba(255, 255, 255, 0.05); }
+.btn-deletar { color: var(--cor-destaque); opacity: 0.3; cursor: pointer; }
+.item-cadastro:hover .btn-deletar { opacity: 1; }
+.view-modal { animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
