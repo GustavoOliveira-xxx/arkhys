@@ -1155,6 +1155,62 @@ body.tela-acesso {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   CAMPOS DINÂMICOS — MODALIDADE (MEMBROS) E FERRAMENTAS (TAREFAS)
+   ========================================================================== */
+.lista-campos-dinamicos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+    margin-top: var(--espaco-sm);
+}
+
+.lista-campos-dinamicos .campo-entrada {
+    margin: 0;
+}
+
+.lista-selecao-multipla {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: var(--espaco-xs);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+}
+
+.item-ferramenta-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: var(--raio-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--texto-principal);
+    transition: background var(--duracao-media) var(--curva-suave);
+}
+
+.item-ferramenta-checkbox:hover {
+    background: var(--cor-destaque-fraquissimo);
+}
+
+.item-ferramenta-checkbox input[type="checkbox"] {
+    accent-color: var(--cor-destaque);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.texto-vazio-pequeno {
+    color: var(--texto-terciario);
+    font-size: 0.85rem;
+    margin: 0.2rem 0;
+}
+
 /* ==========================================================================
    ESTILOS EXCLUSIVOS — TELA CADASTROS
    ========================================================================== */
