@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkhys | Painel Principal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style-global.css">
+
+    <!-- Conexão com o Banco de Dados -->
+    <script type="module" src="js/supabase-config.js"></script>
+</head>
+<body>
+
+    <!-- Fundo Dinâmico -->
+    <div class="bg-dinamico" aria-hidden="true"></div>
+
+    <!-- Navegação Principal -->
+    <nav class="navegacao">
+        <div class="nav-conteudo">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo-arkhys.png" alt="Arkhys" loading="lazy">
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-item ativo">
+                    <span class="nav-icone">🏠</span>
+                    <span>Início</span>
+                </a>
+                <a href="hoje.html" class="nav-item">
+                    <span class="nav-icone">📅</span>
+                    <span>Hoje</span>
+                </a>
+                <a href="tarefas.html" class="nav-item">
+                    <span class="nav-icone">📋</span>
+                    <span>Tarefas</span>
+                </a>
+                <a href="cadastros.html" class="nav-item">
+                    <span class="nav-icone">⚙️</span>
+                    <span>Cadastros</span>
+                </a>
+                <a href="calendario.html" class="nav-item">
+                    <span class="nav-icone">🗓️</span>
+                    <span>Calendário</span>
+                </a>
+                <a href="arquivos.html" class="nav-item">
+                    <span class="nav-icone">📁</span>
+                    <span>Cofre</span>
+                </a>
+                <a href="perfil.html" class="nav-item">
+                    <span class="nav-icone">👤</span>
+                    <span>Perfil</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="conteudo-principal">
+        <!-- Cabeçalho -->
+        <header class="cabecalho-pagina">
+            <div class="cabecalho-texto">
+                <h1 id="saudacaoUsuario">Bem-vindo(a) de volta</h1>
+                <p id="resumoDia">Aqui está o resumo do seu planejamento para hoje</p>
+            </div>
+        </header>
+
+        <!-- Cards de Resumo (valores carregados do banco) -->
+        <section class="grid-cards">
+            <div class="card-resumo">
+                <div class="card-titulo">Tarefas Pendentes</div>
+                <div class="card-valor" id="qtdPendentes">0</div>
+                <div class="card-detalhe" id="qtdHoje">0 para hoje</div>
+            </div>
+
+            <div class="card-resumo">
+                <div class="card-titulo">Próximas Entregas</div>
+                <div class="card-valor" id="qtdEntregas">0</div>
+                <div class="card-detalhe">Até o final da semana</div>
+            </div>
+
+            <div class="card-resumo">
+                <div class="card-titulo">XP Total</div>
+                <div class="card-valor" id="xpTotal">0</div>
+                <div class="card-detalhe" id="nivelAtual">Nível 1</div>
+                <div class="barra-xp">
+                    <div class="barra-preenchimento" id="barraXp" style="width: 0%;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção "Hoje" -->
+        <section class="secao-hoje">
+            <div class="titulo-secao">
+                <span class="marca-destaque"></span>
+                O que fazer hoje
+            </div>
+
+            <div class="lista-itens" id="listaHoje">
+                <!-- Itens serão carregados automaticamente do banco -->
+                <div class="item-vazio">Nenhum compromisso para hoje</div>
+            </div>
+        </section>
+
+        <!-- Próximas Atividades -->
+        <section class="secao-proximas">
+            <div class="titulo-secao">
+                <span class="marca-destaque"></span>
+                Próximas atividades
+            </div>
+
+            <div class="lista-itens" id="listaProximas">
+                <!-- Itens serão carregados automaticamente do banco -->
+                <div class="item-vazio">Nenhuma atividade futura cadastrada</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/ui.js"></script>
+
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

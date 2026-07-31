@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkhys | Tarefas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style-global.css">
+
+    <script type="module" src="js/supabase-config.js"></script>
+</head>
+<body>
+
+    <div class="bg-dinamico" aria-hidden="true"></div>
+
+    <nav class="navegacao">
+        <div class="nav-conteudo">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo-arkhys.png" alt="Arkhys" loading="lazy">
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-icone">🏠</span>
+                    <span>Início</span>
+                </a>
+                <a href="hoje.html" class="nav-item">
+                    <span class="nav-icone">📅</span>
+                    <span>Hoje</span>
+                </a>
+                <a href="tarefas.html" class="nav-item ativo">
+                    <span class="nav-icone">📋</span>
+                    <span>Tarefas</span>
+                </a>
+                <a href="cadastros.html" class="nav-item">
+                    <span class="nav-icone">⚙️</span>
+                    <span>Cadastros</span>
+                </a>
+                <a href="calendario.html" class="nav-item">
+                    <span class="nav-icone">🗓️</span>
+                    <span>Calendário</span>
+                </a>
+                <a href="arquivos.html" class="nav-item">
+                    <span class="nav-icone">📁</span>
+                    <span>Cofre</span>
+                </a>
+                <a href="perfil.html" class="nav-item">
+                    <span class="nav-icone">👤</span>
+                    <span>Perfil</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="conteudo-principal">
+        <header class="cabecalho-pagina">
+            <div class="cabecalho-texto">
+                <h1>Tarefas</h1>
+                <p>Gerencie todas as suas atividades</p>
+            </div>
+            <button type="button" id="btnNovaTarefa" class="botao botao-primario">+ Nova Tarefa</button>
+        </header>
+
+        <div class="area-filtros">
+            <select id="filtroStatus" class="campo-entrada">
+                <option value="">Todos os status</option>
+                <option value="pendentes">Pendentes</option>
+                <option value="concluidas">Concluídas</option>
+            </select>
+
+            <select id="filtroMateria" class="campo-entrada">
+                <option value="">Todas as matérias</option>
+            </select>
+        </div>
+
+        <div class="lista-itens" id="listaTarefas"></div>
+    </main>
+
+    <!-- Modal de Cadastro/Edição -->
+    <div id="modalTarefa" hidden>
+        <div class="form-modal">
+            <div class="cabecalho-modal">
+                <h3>Nova Tarefa</h3>
+                <button type="button" id="fecharModal" class="btn-acao">✕</button>
+            </div>
+
+            <form id="formTarefa">
+                <input type="hidden" id="idTarefa">
+
+                <div class="grupo-campo">
+                    <label for="titulo">TÍTULO</label>
+                    <input type="text" id="titulo" class="campo-entrada" required>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="descricao">DESCRIÇÃO</label>
+                    <textarea id="descricao" class="campo-entrada" rows="3"></textarea>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="materia">MATÉRIA</label>
+                    <select id="materia" class="campo-entrada">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+
+                <div class="linha-dupla">
+                    <div class="grupo-campo">
+                        <label for="data_entrega">DATA DE ENTREGA</label>
+                        <input type="date" id="data_entrega" class="campo-entrada" required>
+                    </div>
+                    <div class="grupo-campo">
+                        <label for="hora_entrega">HORÁRIO</label>
+                        <input type="time" id="hora_entrega" class="campo-entrada">
+                    </div>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="duracao">DURAÇÃO (MINUTOS)</label>
+                    <input type="number" id="duracao" class="campo-entrada" min="1" placeholder="Ex: 45">
+                </div>
+
+                <div class="acoes-form">
+                    <button type="submit" class="botao botao-primario w-full">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <script src="js/ui.js"></script>
+    <script type="module" src="js/tarefas.js"></script>
+</body>
+</html>

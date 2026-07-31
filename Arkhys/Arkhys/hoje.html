@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkhys | Hoje</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style-global.css">
+
+    <script type="module" src="js/supabase-config.js"></script>
+</head>
+<body>
+
+    <div class="bg-dinamico" aria-hidden="true"></div>
+
+    <nav class="navegacao">
+        <div class="nav-conteudo">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo-arkhys.png" alt="Arkhys" loading="lazy">
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-icone">🏠</span>
+                    <span>Início</span>
+                </a>
+                <a href="hoje.html" class="nav-item ativo">
+                    <span class="nav-icone">📅</span>
+                    <span>Hoje</span>
+                </a>
+                <a href="tarefas.html" class="nav-item">
+                    <span class="nav-icone">📋</span>
+                    <span>Tarefas</span>
+                </a>
+                <a href="cadastros.html" class="nav-item">
+                    <span class="nav-icone">⚙️</span>
+                    <span>Cadastros</span>
+                </a>
+                <a href="calendario.html" class="nav-item">
+                    <span class="nav-icone">🗓️</span>
+                    <span>Calendário</span>
+                </a>
+                <a href="arquivos.html" class="nav-item">
+                    <span class="nav-icone">📁</span>
+                    <span>Cofre</span>
+                </a>
+                <a href="perfil.html" class="nav-item">
+                    <span class="nav-icone">👤</span>
+                    <span>Perfil</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="conteudo-principal">
+        <header class="cabecalho-pagina">
+            <div class="cabecalho-texto">
+                <h1>Hoje</h1>
+                <p>Seus compromissos para o dia de hoje</p>
+            </div>
+        </header>
+
+        <div class="lista-itens" id="listaHoje"></div>
+
+        <div class="tempo-total" id="tempoTotal"></div>
+    </main>
+    <script src="js/ui.js"></script>
+    <script type="module" src="js/hoje.js"></script>
+</body>
+</html>

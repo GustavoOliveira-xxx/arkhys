@@ -1,0 +1,1294 @@
+/* ==========================================================================
+   ARKHYS — SISTEMA DE ORGANIZAÇÃO ACADÊMICA
+   Folha de estilo global — Painel Principal
+   Modo: exclusivamente escuro
+
+   DIREÇÃO TIPOGRÁFICA
+   Arkhys mistura duas heranças: a de um caderno/ficha catalográfica
+   acadêmica e a de um painel técnico. Por isso a tipografia usa três
+   papéis distintos em vez de uma única fonte para tudo:
+     — Fraunces (serifada, com caráter) para números grandes e títulos,
+       trazendo peso "de arquivo" a estatísticas e cabeçalhos.
+     — Inter (sem serifa, neutra) para textos de interface, corpo e nav.
+     — JetBrains Mono (monoespaçada) para rótulos, etiquetas de status e
+       metadados — como se fossem carimbos de uma ficha catalográfica.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ==========================================================================
+   1. VARIÁVEIS GLOBAIS (:root)
+   Fonte única de verdade para cores, tipografia, espaçamentos e medidas.
+   ========================================================================== */
+:root {
+    /* --- Cores base --- */
+    --cor-fundo: #050407;
+    --cor-superficie: #0c0a10;
+    --cor-superficie-alta: #110e15;
+    --cor-destaque: #c1121f;
+    --cor-destaque-hover: #d81b26;
+    --cor-destaque-fraco: rgba(193, 18, 31, 0.15);
+    --cor-destaque-fraquissimo: rgba(193, 18, 31, 0.06);
+
+    /* --- Texto --- */
+    --texto-principal: #f8f9fa;
+    --texto-secundario: #9ca3af;
+    --texto-terciario: #6b7280;
+
+    /* --- Bordas e divisores --- */
+    --cor-borda: #1b1823;
+    --cor-borda-clara: #241f2b;
+
+    /* --- Sombras e brilhos --- */
+    --brilho-destaque: rgba(193, 18, 31, 0.15);
+    --brilho-destaque-forte: rgba(193, 18, 31, 0.32);
+    --sombra-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --sombra-card-hover: 0 16px 40px rgba(0, 0, 0, 0.55);
+
+    /* --- Tipografia --- */
+    --fonte-titulo: 'Fraunces', 'Georgia', serif;
+    --fonte-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --fonte-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+    --peso-regular: 400;
+    --peso-medio: 500;
+    --peso-semibold: 600;
+    --peso-bold: 700;
+
+    /* --- Escala de espaçamento --- */
+    --espaco-xs: 0.5rem;
+    --espaco-sm: 0.875rem;
+    --espaco-md: 1.5rem;
+    --espaco-lg: 2.25rem;
+    --espaco-xl: 3.5rem;
+
+    /* --- Raio de borda (cantos suaves, não totalmente arredondados) --- */
+    --raio-sm: 8px;
+    --raio-md: 14px;
+    --raio-lg: 18px;
+
+    /* --- Transições --- */
+    --duracao-rapida: 180ms;
+    --duracao-media: 240ms;
+    --duracao-lenta: 320ms;
+    --curva-suave: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* --- Medidas estruturais --- */
+    --altura-nav: 132px;
+    --altura-nav-mobile: 68px;
+    --largura-maxima: 1180px;
+
+    /* --- Tamanho da "orelha" do cartão-ficha (elemento assinatura) --- */
+    --orelha-ficha: 16px;
+}
+
+/* ==========================================================================
+   2. RESET UNIVERSAL
+   ========================================================================== */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+}
+
+body {
+    font-family: var(--fonte-base);
+    background-color: var(--cor-fundo);
+    color: var(--texto-principal);
+    font-weight: var(--peso-regular);
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    font-feature-settings: "cv01", "ss01";
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+button {
+    font-family: inherit;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: inherit;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+/* Respeita preferência de movimento reduzido do usuário */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Foco visível para acessibilidade de teclado */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid var(--cor-destaque);
+    outline-offset: 3px;
+    border-radius: var(--raio-sm);
+}
+
+/* ==========================================================================
+   3. FUNDO DINÂMICO
+   Gradiente diagonal + pontos de luz vermelhos em profundidades e
+   velocidades diferentes, mais uma textura de grão muito fina que dá
+   ao preto profundo uma sensação de papel/matéria em vez de "vidro".
+   ========================================================================== */
+.bg-dinamico {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(ellipse 900px 600px at 15% 20%, var(--cor-destaque-fraquissimo), transparent 60%),
+        radial-gradient(ellipse 700px 500px at 85% 75%, var(--cor-destaque-fraquissimo), transparent 55%),
+        linear-gradient(135deg, #07050a 0%, var(--cor-fundo) 45%, #08060b 100%);
+    opacity: 0;
+    animation: fundo-surgir 1.8s var(--curva-suave) forwards;
+}
+
+/* Grão sutil — SVG de ruído fractal em opacidade mínima, dá textura
+   de papel ao preto profundo em vez do "vidro" genérico */
+.bg-dinamico::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+}
+
+.bg-dinamico::before {
+    content: '';
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    top: -10%;
+    left: 8%;
+    border-radius: 50%;
+    filter: blur(90px);
+    background: radial-gradient(circle, var(--cor-destaque-fraco), transparent 70%);
+    will-change: transform;
+    animation: flutuar-lento 34s ease-in-out infinite;
+}
+
+@keyframes fundo-surgir {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes flutuar-lento {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, 40px) scale(1.08); }
+}
+
+/* ==========================================================================
+   4. ANIMAÇÃO DE CARREGAMENTO EM CAMADAS
+   Navegação → cabeçalho → cartões → conteúdo, com pequeno intervalo.
+   ========================================================================== */
+@keyframes surgir-camada {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.navegacao {
+    animation: surgir-camada var(--duracao-lenta) var(--curva-suave) both;
+    animation-delay: 0.05s;
+}
+
+.cabecalho-pagina {
+    animation: surgir-camada var(--duracao-lenta) var(--curva-suave) both;
+    animation-delay: 0.22s;
+}
+
+.grid-cards {
+    animation: surgir-camada var(--duracao-lenta) var(--curva-suave) both;
+    animation-delay: 0.38s;
+}
+
+.secao-hoje {
+    animation: surgir-camada var(--duracao-lenta) var(--curva-suave) both;
+    animation-delay: 0.52s;
+}
+
+.secao-proximas {
+    animation: surgir-camada var(--duracao-lenta) var(--curva-suave) both;
+    animation-delay: 0.64s;
+}
+
+/* Animação exclusiva da logo — fade-in + pulso + brilho sutil */
+@keyframes logo-surgir {
+    0% {
+        opacity: 0;
+        transform: scale(0.92);
+        filter: drop-shadow(0 0 0 rgba(193, 18, 31, 0));
+    }
+    55% {
+        opacity: 1;
+        transform: scale(1.02);
+        filter: drop-shadow(0 0 14px var(--brilho-destaque-forte));
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(193, 18, 31, 0));
+    }
+}
+
+/* Logo — área com leve "chapa" de contraste atrás para garantir
+   legibilidade em qualquer fundo, renderização em alta qualidade e
+   nitidez máxima permitida pelo arquivo de origem */
+.nav-logo {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0.5rem 1rem 0.5rem 0;
+    border-radius: var(--raio-sm);
+}
+
+.nav-logo img {
+    /* A logo real é um emblema largo (~1.48:1) — a altura define o
+       tamanho, a largura acompanha proporcionalmente via 'auto'.
+       Sem filtros e sem image-rendering forçado: a arte é ilustrativa
+       e detalhada (não pixel art), então o navegador deve usar
+       reamostragem suave (padrão) para preservar cada traço fino
+       exatamente como está no arquivo original. */
+    height: 108px;
+    width: auto;
+    max-width: 400px;
+    object-fit: contain;
+    animation: logo-surgir 1.1s var(--curva-suave) both;
+}
+
+/* ==========================================================================
+   5. NAVEGAÇÃO PRINCIPAL
+   Fixa no topo (desktop) e na base (mobile).
+   ========================================================================== */
+.navegacao {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--altura-nav);
+    background: rgba(12, 10, 16, 0.72);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid var(--cor-borda);
+    z-index: 100;
+}
+
+.nav-conteudo {
+    max-width: var(--largura-maxima);
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 var(--espaco-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espaco-lg);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-xs);
+    height: 100%;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--raio-sm);
+    font-size: 0.875rem;
+    font-weight: var(--peso-medio);
+    color: var(--texto-secundario);
+    position: relative;
+    transition: color var(--duracao-media) var(--curva-suave),
+                background-color var(--duracao-media) var(--curva-suave);
+}
+
+.nav-icone {
+    font-size: 1rem;
+    transition: transform var(--duracao-media) var(--curva-suave);
+}
+
+.nav-item:hover {
+    color: var(--texto-principal);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.nav-item:hover .nav-icone {
+    transform: scale(1.12);
+}
+
+/* Item ativo — marcação vermelha com efeito de preenchimento suave */
+.nav-item.ativo {
+    color: var(--texto-principal);
+    background: linear-gradient(180deg, var(--cor-destaque-fraco), transparent);
+}
+
+.nav-item.ativo::after {
+    content: '';
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--cor-destaque), transparent);
+    box-shadow: 0 0 8px var(--brilho-destaque-forte);
+}
+
+.nav-item.ativo .nav-icone {
+    transform: scale(1.12);
+}
+
+/* ==========================================================================
+   6. CONTEÚDO PRINCIPAL
+   ========================================================================== */
+.conteudo-principal {
+    max-width: var(--largura-maxima);
+    margin: 0 auto;
+    padding: calc(var(--altura-nav) + var(--espaco-xl)) var(--espaco-lg) var(--espaco-xl);
+}
+
+/* --- Cabeçalho ---
+   Título em Fraunces: dá peso editorial ao "Bem-vindo(a) de volta",
+   diferenciando o cabeçalho do restante da interface (que é Inter). */
+.cabecalho-pagina {
+    margin-bottom: var(--espaco-lg);
+}
+
+.cabecalho-texto h1 {
+    font-family: var(--fonte-titulo);
+    font-size: clamp(1.65rem, 1.3rem + 1.4vw, 2.35rem);
+    font-weight: 600;
+    font-optical-sizing: auto;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin-bottom: 0.4rem;
+}
+
+.cabecalho-texto p {
+    color: var(--texto-secundario);
+    font-size: 0.95rem;
+    font-weight: var(--peso-regular);
+}
+
+/* ==========================================================================
+   7. CARTÕES DE RESUMO — "FICHAS"
+   Elemento assinatura: cada cartão tem a orelha superior direita
+   cortada, como uma ficha de catálogo físico, e o rótulo é composto
+   em monoespaçada tracked, como um carimbo de arquivo. No hover, uma
+   aba vermelha na borda esquerda acende — a mesma linguagem de
+   "marca-destaque" usada nos títulos de seção, unificando o sistema.
+   ========================================================================== */
+.grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--espaco-md);
+    margin-bottom: var(--espaco-xl);
+}
+
+.card-resumo {
+    position: relative;
+    background: rgba(12, 10, 16, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--cor-borda);
+    border-left: 1px solid var(--cor-borda);
+    border-radius: var(--raio-lg);
+    padding: var(--espaco-md);
+    box-shadow: var(--sombra-card);
+    overflow: hidden;
+    clip-path: polygon(
+        0 0,
+        calc(100% - var(--orelha-ficha)) 0,
+        100% var(--orelha-ficha),
+        100% 100%,
+        0 100%
+    );
+    transition: transform var(--duracao-media) var(--curva-suave),
+                box-shadow var(--duracao-lenta) var(--curva-suave),
+                border-left-color var(--duracao-media) var(--curva-suave);
+}
+
+/* Preenche a "orelha" cortada com um triângulo na cor de fundo,
+   simulando o canto dobrado de uma ficha física */
+.card-resumo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--orelha-ficha);
+    height: var(--orelha-ficha);
+    background: linear-gradient(135deg, transparent 50%, var(--cor-fundo) 50%);
+    opacity: 0.9;
+    transition: background var(--duracao-media) var(--curva-suave);
+}
+
+.card-resumo:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sombra-card-hover);
+    border-left: 2px solid var(--cor-destaque);
+    border-left-width: 3px;
+}
+
+.card-resumo:hover::before {
+    background: linear-gradient(135deg, transparent 50%, var(--cor-destaque) 50%);
+    opacity: 0.55;
+}
+
+.card-titulo {
+    font-family: var(--fonte-mono);
+    font-size: 0.72rem;
+    font-weight: var(--peso-medio);
+    color: var(--texto-secundario);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--espaco-sm);
+}
+
+.card-valor {
+    font-family: var(--fonte-titulo);
+    font-size: clamp(1.8rem, 1.5rem + 1vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--texto-principal);
+    text-shadow: 0 0 20px var(--brilho-destaque);
+    line-height: 1.1;
+    margin-bottom: 0.35rem;
+    font-variant-numeric: oldstyle-nums;
+}
+
+.card-detalhe {
+    font-family: var(--fonte-mono);
+    font-size: 0.75rem;
+    color: var(--texto-terciario);
+    font-weight: var(--peso-regular);
+    letter-spacing: 0.02em;
+}
+
+/* --- Barra de XP --- */
+.barra-xp {
+    position: relative;
+    margin-top: var(--espaco-md);
+    height: 6px;
+    border-radius: 999px;
+    background: var(--cor-borda);
+    overflow: hidden;
+}
+
+.barra-preenchimento {
+    position: relative;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #7a0d15, var(--cor-destaque));
+    width: 0%;
+    animation: preencher-barra 1.4s 1s var(--curva-suave) forwards;
+}
+
+.barra-preenchimento::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    width: 40%;
+    animation: brilho-percorrer 2.6s 2.4s ease-in-out infinite;
+}
+
+@keyframes preencher-barra {
+    from { width: 0%; }
+    to { width: 65%; }
+}
+
+@keyframes brilho-percorrer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(340%); }
+}
+
+/* ==========================================================================
+   8. SEÇÕES "HOJE" E "PRÓXIMAS ATIVIDADES"
+   ========================================================================== */
+.secao-hoje,
+.secao-proximas {
+    margin-bottom: var(--espaco-xl);
+}
+
+/* Título de seção com "linha de destaque" ao lado — mantém o peso
+   editorial do Fraunces também nos títulos internos */
+.titulo-secao {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+    font-family: var(--fonte-titulo);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--texto-principal);
+    margin-bottom: var(--espaco-md);
+}
+
+.marca-destaque {
+    width: 4px;
+    height: 20px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--cor-destaque), #6b0a10);
+    box-shadow: 0 0 10px var(--brilho-destaque-forte);
+    flex-shrink: 0;
+}
+
+.lista-itens {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+}
+
+.item-tarefa {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-md);
+    padding: var(--espaco-sm) var(--espaco-md);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+    transition: transform var(--duracao-media) var(--curva-suave),
+                border-color var(--duracao-media) var(--curva-suave),
+                background-color var(--duracao-media) var(--curva-suave);
+}
+
+.item-tarefa:hover {
+    transform: translateX(3px);
+    border-color: var(--cor-borda-clara);
+    background: var(--cor-superficie-alta);
+}
+
+.item-icone {
+    font-size: 1.15rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cor-destaque-fraquissimo);
+    border-radius: var(--raio-sm);
+    flex-shrink: 0;
+}
+
+.item-conteudo {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-conteudo h4 {
+    font-family: var(--fonte-base);
+    font-size: 0.95rem;
+    font-weight: var(--peso-semibold);
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-conteudo p {
+    font-family: var(--fonte-mono);
+    font-size: 0.78rem;
+    color: var(--texto-secundario);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- Etiquetas de status — compostas em monoespaçada, como um
+   carimbo de "protocolado em" numa ficha --- */
+.status {
+    flex-shrink: 0;
+    font-family: var(--fonte-mono);
+    font-size: 0.68rem;
+    font-weight: var(--peso-medio);
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.status.normal {
+    background: rgba(156, 163, 175, 0.1);
+    color: var(--texto-secundario);
+    border: 1px solid var(--cor-borda-clara);
+}
+
+.status.prazo-hoje {
+    background: var(--cor-destaque-fraco);
+    color: #ff6b74;
+    border: 1px solid rgba(193, 18, 31, 0.3);
+}
+
+.status.atrasado {
+    background: rgba(193, 18, 31, 0.22);
+    color: #ff8087;
+    border: 1px solid rgba(193, 18, 31, 0.45);
+    animation: pulsar-alerta 2.4s ease-in-out infinite;
+}
+
+.status.proximo {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--texto-principal);
+    border: 1px solid var(--cor-borda-clara);
+}
+
+@keyframes pulsar-alerta {
+    0%, 100% { box-shadow: 0 0 0 rgba(193, 18, 31, 0); }
+    50% { box-shadow: 0 0 12px var(--brilho-destaque); }
+}
+
+/* ==========================================================================
+   9. COMPONENTES REUTILIZÁVEIS (padrão para todo o site)
+   ========================================================================== */
+
+/* --- Botões --- */
+.botao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: var(--raio-sm);
+    font-family: var(--fonte-base);
+    font-size: 0.9rem;
+    font-weight: var(--peso-semibold);
+    transition: transform var(--duracao-rapida) var(--curva-suave),
+                box-shadow var(--duracao-media) var(--curva-suave),
+                background-color var(--duracao-media) var(--curva-suave);
+}
+
+.botao-primario {
+    background: var(--cor-destaque);
+    color: var(--texto-principal);
+}
+
+.botao-primario:hover {
+    background: var(--cor-destaque-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -4px var(--brilho-destaque-forte);
+}
+
+.botao-primario:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.botao-secundario {
+    background: transparent;
+    color: var(--texto-principal);
+    border: 1px solid var(--cor-borda-clara);
+}
+
+.botao-secundario:hover {
+    border-color: var(--cor-destaque);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px -6px var(--brilho-destaque-forte);
+}
+
+.botao-secundario:active {
+    transform: translateY(0) scale(0.97);
+}
+
+/* --- Campos de entrada --- */
+.campo-entrada {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    color: var(--texto-principal);
+    font-size: 0.9rem;
+    font-family: var(--fonte-base);
+    transition: border-color var(--duracao-media) var(--curva-suave),
+                box-shadow var(--duracao-media) var(--curva-suave);
+}
+
+.campo-entrada::placeholder {
+    color: var(--texto-terciario);
+}
+
+.campo-entrada:focus {
+    outline: none;
+    border-color: var(--cor-destaque);
+    box-shadow: 0 0 0 3px var(--cor-destaque-fraquissimo);
+}
+
+/* --- Rótulo de metadado avulso (data, hora, código) — reutilizável
+   fora dos cartões, mesmo tratamento monoespaçado --- */
+.metadado {
+    font-family: var(--fonte-mono);
+    font-size: 0.75rem;
+    color: var(--texto-terciario);
+    letter-spacing: 0.03em;
+}
+
+/* --- Divisor com gradiente sutil --- */
+.divisor {
+    height: 1px;
+    border: none;
+    background: linear-gradient(90deg, transparent, var(--cor-borda-clara), transparent);
+    margin: var(--espaco-md) 0;
+}
+
+/* --- Superfícies com vidro fosco (modais, menus flutuantes) --- */
+.vidro-fosco {
+    background: rgba(12, 10, 16, 0.7);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--cor-borda-clara);
+    border-radius: var(--raio-lg);
+    box-shadow: var(--sombra-card-hover);
+}
+
+/* ==========================================================================
+   10. RESPONSIVIDADE
+   ========================================================================== */
+
+/* --- Tablets --- */
+@media (max-width: 992px) {
+    :root {
+        --altura-nav: 104px;
+    }
+
+    .nav-conteudo {
+        padding: 0 var(--espaco-md);
+    }
+
+    .nav-logo img {
+        height: 72px;
+    }
+
+    .conteudo-principal {
+        padding-left: var(--espaco-md);
+        padding-right: var(--espaco-md);
+    }
+
+    .grid-cards {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+/* --- Navegação inferior em telas menores que 768px --- */
+@media (max-width: 768px) {
+    .navegacao {
+        top: auto;
+        bottom: 0;
+        height: var(--altura-nav-mobile);
+        border-bottom: none;
+        border-top: 1px solid var(--cor-borda);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .nav-conteudo {
+        flex-direction: row-reverse;
+        justify-content: center;
+        padding: 0 var(--espaco-xs);
+    }
+
+    .nav-logo {
+        display: none;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: space-around;
+        gap: 0;
+    }
+
+    .nav-item {
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.65rem;
+        flex: 1;
+        text-align: center;
+    }
+
+    .nav-item span:not(.nav-icone) {
+        font-size: 0.65rem;
+    }
+
+    .nav-item.ativo::after {
+        bottom: auto;
+        top: -1px;
+    }
+
+    .conteudo-principal {
+        padding-top: var(--espaco-lg);
+        padding-bottom: calc(var(--altura-nav-mobile) + var(--espaco-lg));
+    }
+}
+
+/* --- Celulares pequenos --- */
+@media (max-width: 480px) {
+    .grid-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .item-tarefa {
+        gap: var(--espaco-sm);
+        padding: var(--espaco-sm);
+    }
+
+    .item-icone {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+    }
+
+    .status {
+        font-size: 0.62rem;
+        padding: 0.25rem 0.55rem;
+    }
+}
+
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS — TELAS DE ACESSO / LOGIN E CADASTRO
+   COM ANIMAÇÕES E DINÂMICA MELHORADA
+   ========================================================================== */
+body.tela-acesso {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--espaco-md);
+}
+
+.caixa-acesso {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    animation: surgir-camada 0.7s var(--curva-suave) both;
+    animation-delay: 0.1s;
+}
+
+/* Animação especial da logo — pulso suave + brilho que passa */
+.logo-acesso {
+    text-align: center;
+    margin-bottom: var(--espaco-lg);
+    animation: logo-surgir 1.2s var(--curva-suave) both,
+               brilho-longo 3.5s ease-in-out infinite 1.5s;
+}
+
+.logo-acesso img {
+    height: 90px;
+    width: auto;
+    margin: 0 auto;
+}
+
+.titulo-acesso {
+    font-family: var(--fonte-titulo);
+    font-size: 1.8rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 0.3rem;
+    opacity: 0;
+    animation: surgir-camada 0.6s var(--curva-suave) forwards;
+    animation-delay: 0.3s;
+}
+
+.subtitulo-acesso {
+    text-align: center;
+    color: var(--texto-secundario);
+    font-size: 0.9rem;
+    margin-bottom: var(--espaco-lg);
+    opacity: 0;
+    animation: surgir-camada 0.6s var(--curva-suave) forwards;
+    animation-delay: 0.4s;
+}
+
+.form-acesso {
+    background: rgba(12, 10, 16, 0.75);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-lg);
+    padding: var(--espaco-lg);
+    box-shadow: var(--sombra-card);
+    clip-path: polygon(
+        0 0,
+        calc(100% - var(--orelha-ficha)) 0,
+        100% var(--orelha-ficha),
+        100% 100%,
+        0 100%
+    );
+    opacity: 0;
+    transform: translateY(18px);
+    animation: surgir-camada 0.7s var(--curva-suave) forwards;
+    animation-delay: 0.55s;
+    transition: transform var(--duracao-media) var(--curva-suave),
+                box-shadow var(--duracao-media) var(--curva-suave),
+                border-color var(--duracao-media) var(--curva-suave);
+}
+
+.form-acesso:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sombra-card-hover);
+    border-color: var(--cor-borda-clara);
+}
+
+.grupo-campo {
+    margin-bottom: var(--espaco-md);
+    opacity: 0;
+    transform: translateX(-8px);
+    animation: surgir-campo 0.5s var(--curva-suave) forwards;
+}
+
+.grupo-campo:nth-child(1) { animation-delay: 0.7s; }
+.grupo-campo:nth-child(2) { animation-delay: 0.85s; }
+.grupo-campo:nth-child(3) { animation-delay: 1s; }
+.grupo-campo:nth-child(4) { animation-delay: 1.15s; }
+
+@keyframes surgir-campo {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.grupo-campo label {
+    display: block;
+    font-family: var(--fonte-mono);
+    font-size: 0.75rem;
+    color: var(--texto-secundario);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.03em;
+    transition: color var(--duracao-rapida);
+}
+
+.grupo-campo:focus-within label {
+    color: var(--cor-destaque);
+    text-shadow: 0 0 6px var(--brilho-destaque);
+}
+
+.acoes-form {
+    margin-top: var(--espaco-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-sm);
+    opacity: 0;
+    animation: surgir-camada 0.6s var(--curva-suave) forwards;
+    animation-delay: 1.3s;
+}
+
+.link-cadastro {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--texto-secundario);
+    margin-top: var(--espaco-sm);
+    opacity: 0;
+    animation: surgir-camada 0.6s var(--curva-suave) forwards;
+    animation-delay: 1.45s;
+}
+
+.link-cadastro a {
+    color: var(--cor-destaque);
+    font-weight: var(--peso-medio);
+    transition: color var(--duracao-rapida), text-shadow var(--duracao-rapida);
+}
+
+.link-cadastro a:hover {
+    color: var(--cor-destaque-hover);
+    text-shadow: 0 0 8px var(--brilho-destaque);
+    text-decoration: underline;
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* Animação extra: brilho suave que percorre a borda superior */
+@keyframes brilho-longo {
+    0% { box-shadow: 0 0 0 rgba(193, 18, 31, 0); }
+    50% { box-shadow: 0 0 18px var(--brilho-destaque); }
+    100% { box-shadow: 0 0 0 rgba(193, 18, 31, 0); }
+}
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS — TELA "HOJE"
+   ========================================================================== */
+.grupo-tarefas {
+    margin-bottom: var(--espaco-md);
+}
+
+.subtitulo-secao {
+    font-family: var(--fonte-mono);
+    font-size: 0.8rem;
+    color: var(--texto-secundario);
+    margin-bottom: var(--espaco-sm);
+    padding-left: 4px;
+    border-left: 2px solid var(--cor-destaque);
+}
+
+.item-vazio {
+    text-align: center;
+    padding: var(--espaco-lg);
+    color: var(--texto-terciario);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS — TELA TAREFAS
+   ========================================================================== */
+.item-tarefa.concluida {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.item-acoes {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.btn-acao {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    transition: all var(--duracao-rapida);
+}
+
+.btn-acao:hover {
+    background: var(--cor-destaque-fraco);
+    border-color: var(--cor-destaque);
+    transform: scale(1.1);
+}
+
+#modalTarefa {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 999;
+    padding: 1rem;
+}
+
+#modalTarefa[hidden] { display: none; }
+
+.form-modal {
+    width: 100%;
+    max-width: 480px;
+    background: var(--cor-superficie-alta);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-lg);
+    padding: var(--espaco-lg);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+}
+
+.cabecalho-modal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--espaco-md);
+}
+
+.cabecalho-modal h3 {
+    font-family: var(--fonte-titulo);
+    font-size: 1.25rem;
+}
+
+/* Ajustes específicos da página Tarefas */
+.area-filtros {
+    display: flex;
+    gap: var(--espaco-sm);
+    margin-bottom: var(--espaco-md);
+    flex-wrap: wrap;
+}
+
+.area-filtros select {
+    flex: 1;
+    min-width: 160px;
+}
+
+.linha-dupla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--espaco-md);
+}
+
+@media (max-width: 520px) {
+    .linha-dupla {
+        grid-template-columns: 1fr;
+    }
+}
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS — TELA CADASTROS
+   ========================================================================== */
+.botao-card {
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: all var(--duracao-media) var(--curva-suave);
+}
+
+.botao-card:hover {
+    transform: translateY(-6px);
+    border-left-color: var(--cor-destaque);
+}
+
+.card-icone {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Reutiliza o estilo de modal que já criamos na página de tarefas */
+
+
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS — CALENDÁRIO
+   ========================================================================== */
+.navegacao-mes {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+}
+
+.nome-mes {
+    font-family: var(--fonte-titulo);
+    font-size: 1.2rem;
+    font-weight: 600;
+    min-width: 160px;
+    text-align: center;
+}
+
+.grade-calendario {
+    margin-top: var(--espaco-lg);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-lg);
+    padding: var(--espaco-md);
+}
+
+.cabecalho-dias {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.cabecalho-dias div {
+    text-align: center;
+    font-family: var(--fonte-mono);
+    font-size: 0.7rem;
+    color: var(--texto-secundario);
+    padding: 0.5rem;
+}
+
+.dias-calendario {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.dia-calendario, .dia-vazio {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.3rem;
+    border-radius: var(--raio-sm);
+    font-size: 0.85rem;
+}
+
+.dia-vazio {
+    background: transparent;
+}
+
+.dia-calendario {
+    background: var(--cor-superficie-alta);
+    border: 1px solid transparent;
+    transition: all var(--duracao-rapida);
+}
+
+.dia-calendario:hover {
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraquissimo);
+}
+
+.dia-hoje {
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraco);
+    font-weight: 600;
+}
+
+.tem-tarefa {
+    font-weight: 500;
+}
+
+.ponto-tarefa {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 0.2rem;
+    background: var(--cor-destaque);
+}
+
+.ponto-tarefa.concluida {
+    background: #4ade80;
+}
+
+.numero-dia {
+    font-family: var(--fonte-base);
+}
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS — COFRE DE ARQUIVOS
+   ========================================================================== */
+.item-icone {
+    font-size: 1.5rem;
+}
+
+.botao-perigo {
+    background: rgba(220, 38, 38, 0.1);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.botao-perigo:hover {
+    background: #ef4444;
+    color: white;
+}
