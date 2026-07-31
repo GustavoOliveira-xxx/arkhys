@@ -1,143 +1,99 @@
 import { supabase } from './supabase-config.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Verifica se está logado
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        window.location.href = 'login.html';
-        return;
-    }
+    if (!user) { window.location.href = 'login.html'; return; }
 
-    // Elementos gerais
-    const botoesCard = document.querySelectorAll('.botao-card');
+    const modalGerenciador = document.getElementById('modalGerenciador');
+    const viewListagem = document.getElementById('viewListagem');
+    const viewFormulario = document.getElementById('viewFormulario');
+    const listaItens = document.getElementById('listaItens');
+    const camposDinamicos = document.getElementById('camposDinamicos');
+    const formUnificado = document.getElementById('formUnificado');
+    const tituloLista = document.getElementById('tituloLista');
+    const tituloForm = document.getElementById('tituloForm');
+    
+    const btnNovoCadastro = document.getElementById('btnNovoCadastro');
+    const btnVoltarLista = document.getElementById('btnVoltarLista');
     const botoesFechar = document.querySelectorAll('.fechar-modal');
-    const modais = document.querySelectorAll('[id^="modal"]');
+    const botoesCard = document.querySelectorAll('.botao-card');
+    const abasNavegacao = document.querySelectorAll('.aba-item');
 
-    // Mapeamento de modais para tabelas e containers
-    const configModais = {
-        'modalMaterias': { tabela: 'materias', container: 'listaMaterias' },
-        'modalOrgaos': { tabela: 'orgaos', container: 'listaOrgaos' },
-        'modalFerramentas': { tabela: 'ferramentas', container: 'listaFerramentas' },
-        'modalMembros': { tabela: 'membros', container: 'listaMembros' }
+    let abaAtual = 'materias';
+
+    const configAbas = {
+        'materias': { titulo: 'Matérias', tabela: 'materias', msgVazio: 'Nenhuma matéria cadastrada.', campos: [{ label: 'NOME DA MATÉRIA', type: 'text', key: 'nome', required: true }] },
+        'orgaos': { titulo: 'Órgãos', tabela: 'orgaos', msgVazio: 'Nenhum órgão cadastrado.', campos: [{ label: 'NOME DO ÓRGÃO', type: 'text', key: 'nome', required: true }, { label: 'DESCRIÇÃO', type: 'textarea', key: 'descricao' }] },
+        'ferramentas': { titulo: 'Ferramentas', tabela: 'ferramentas', msgVazio: 'Nenhuma ferramenta cadastrada.', campos: [{ label: 'NOME DA FERRAMENTA', type: 'text', key: 'nome', required: true }, { label: 'TIPO', type: 'text', key: 'tipo', placeholder: 'Ex: Livro, Aplicativo' }] },
+        'membros': { titulo: 'Membros', tabela: 'membros', msgVazio: 'Nenhum membro cadastrado.', campos: [{ label: 'NOME COMPLETO', type: 'text', key: 'nome', required: true }, { label: 'FUNÇÃO / CARGO', type: 'text', key: 'funcao' }] }
     };
 
-    // Função para carregar listas
-    async function carregarLista(idModal) {
-        const config = configModais[idModal];
-        if (!config) return;
+    function mudarAba(idAba) {
+        abaAtual = idAba;
+        abasNavegacao.forEach(aba => aba.classList.toggle('ativa', aba.dataset.aba === idAba));
+        tituloLista.textContent = configAbas[idAba].titulo;
+        exibirView('listagem');
+        carregarItens();
+    }
 
-        const container = document.getElementById(config.container);
-        container.innerHTML = '<div class="lista-vazia">Carregando...</div>';
-
-        const { data, error } = await supabase
-            .from(config.tabela)
-            .select('*')
-            .eq('usuario_id', user.id)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            container.innerHTML = `<div class="lista-vazia">Erro ao carregar: ${error.message}</div>`;
-            return;
+    function exibirView(view) {
+        viewListagem.hidden = view !== 'listagem';
+        viewFormulario.hidden = view !== 'formulario';
+        if (view === 'formulario') {
+            tituloForm.textContent = `Novo Cadastro em ${configAbas[abaAtual].titulo}`;
+            gerarCamposForm();
         }
+    }
 
-        if (!data || data.length === 0) {
-            const mensagensVazio = {
-                'materias': 'Nenhuma matéria cadastrada.',
-                'orgaos': 'Nenhum órgão cadastrado.',
-                'ferramentas': 'Nenhuma ferramenta cadastrada.',
-                'membros': 'Nenhum membro cadastrado.'
-            };
-            container.innerHTML = `<div class="lista-vazia">${mensagensVazio[config.tabela]}</div>`;
-            return;
-        }
-
-        container.innerHTML = '';
+    async function carregarItens() {
+        const config = configAbas[abaAtual];
+        listaItens.innerHTML = '<div class="lista-vazia">Carregando...</div>';
+        const { data, error } = await supabase.from(config.tabela).select('*').eq('usuario_id', user.id).order('created_at', { ascending: false });
+        if (error) { listaItens.innerHTML = `<div class="lista-vazia">Erro: ${error.message}</div>`; return; }
+        if (!data || data.length === 0) { listaItens.innerHTML = `<div class="lista-vazia">${config.msgVazio}</div>`; return; }
+        listaItens.innerHTML = '';
         data.forEach(item => {
             const div = document.createElement('div');
             div.className = 'item-cadastro';
-            
-            let detalhes = '';
-            if (config.tabela === 'orgaos' && item.descricao) detalhes = item.descricao;
-            else if (config.tabela === 'ferramentas' && item.tipo) detalhes = item.tipo;
-            else if (config.tabela === 'membros' && item.funcao) detalhes = item.funcao;
-
-            div.innerHTML = `
-                <div class="item-info">
-                    <span class="item-nome">${item.nome}</span>
-                    ${detalhes ? `<span class="item-detalhe">${detalhes}</span>` : ''}
-                </div>
-                <button class="btn-deletar" title="Excluir" data-id="${item.id}" data-tabela="${config.tabela}" data-modal="${idModal}">
-                    ✕
-                </button>
-            `;
-            container.appendChild(div);
-        });
-
-        // Adiciona evento de deletar
-        container.querySelectorAll('.btn-deletar').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const id = e.target.dataset.id;
-                const tabela = e.target.dataset.tabela;
-                const modal = e.target.dataset.modal;
-
-                if (confirm('Tem certeza que deseja excluir este item?')) {
-                    const { error } = await supabase.from(tabela).delete().eq('id', id);
-                    if (error) alert('Erro ao excluir: ' + error.message);
-                    else carregarLista(modal);
-                }
-            });
+            let detalhe = item.descricao || item.tipo || item.funcao || '';
+            div.innerHTML = `<div class="item-info"><span class="item-nome">${item.nome}</span>${detalhe ? `<span class="item-detalhe">${detalhe}</span>` : ''}</div><button class="btn-deletar" data-id="${item.id}">✕</button>`;
+            div.querySelector('.btn-deletar').onclick = () => deletarItem(item.id);
+            listaItens.appendChild(div);
         });
     }
 
-    // Abre modais e carrega lista
-    botoesCard.forEach(botao => {
-        botao.addEventListener('click', () => {
-            const idModal = botao.dataset.modal;
-            document.getElementById(idModal).hidden = false;
-            carregarLista(idModal);
-        });
-    });
+    async function deletarItem(id) {
+        if (confirm('Deseja realmente excluir este item?')) {
+            const { error } = await supabase.from(configAbas[abaAtual].tabela).delete().eq('id', id);
+            if (error) alert('Erro ao excluir: ' + error.message); else carregarItens();
+        }
+    }
 
-    // Fecha modais
-    botoesFechar.forEach(btn => {
-        btn.addEventListener('click', () => {
-            modais.forEach(m => m.hidden = true);
+    function gerarCamposForm() {
+        const config = configAbas[abaAtual];
+        camposDinamicos.innerHTML = '';
+        config.campos.forEach(campo => {
+            const grupo = document.createElement('div'); grupo.className = 'grupo-campo';
+            const label = document.createElement('label'); label.textContent = campo.label;
+            const input = campo.type === 'textarea' ? document.createElement('textarea') : document.createElement('input');
+            input.className = 'campo-entrada'; input.dataset.key = campo.key;
+            if (campo.required) input.required = true;
+            grupo.append(label, input); camposDinamicos.appendChild(grupo);
         });
-    });
+    }
 
-    // ==================================================
-    // SALVAMENTO (MATÉRIAS, ÓRGÃOS, FERRAMENTAS, MEMBROS)
-    // ==================================================
-    const setupForm = (formId, table, modalId) => {
-        const form = document.getElementById(formId);
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const inputs = form.querySelectorAll('input, textarea');
-            const data = { usuario_id: user.id };
-            
-            if (table === 'materias') data.nome = inputs[0].value.trim();
-            else if (table === 'orgaos') {
-                data.nome = inputs[0].value.trim();
-                data.descricao = inputs[1].value.trim();
-            } else if (table === 'ferramentas') {
-                data.nome = inputs[0].value.trim();
-                data.tipo = inputs[1].value.trim();
-            } else if (table === 'membros') {
-                data.nome = inputs[0].value.trim();
-                data.funcao = inputs[1].value.trim();
-            }
+    botoesCard.forEach(btn => btn.onclick = () => { modalGerenciador.hidden = false; mudarAba(btn.dataset.aba); });
+    abasNavegacao.forEach(aba => aba.onclick = () => mudarAba(aba.dataset.aba));
+    botoesFechar.forEach(btn => btn.onclick = () => modalGerenciador.hidden = true);
+    btnNovoCadastro.onclick = () => exibirView('formulario');
+    btnVoltarLista.onclick = () => exibirView('listagem');
 
-            const { error } = await supabase.from(table).insert(data);
-            if (error) alert('Erro: ' + error.message);
-            else {
-                form.reset();
-                carregarLista(modalId);
-            }
-        });
+    formUnificado.onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = { usuario_id: user.id };
+        formUnificado.querySelectorAll('[data-key]').forEach(i => payload[i.dataset.key] = i.value.trim());
+        const { error } = await supabase.from(configAbas[abaAtual].tabela).insert(payload);
+        if (error) alert('Erro ao salvar: ' + error.message);
+        else { formUnificado.reset(); exibirView('listagem'); carregarItens(); }
     };
-
-    setupForm('formMaterias', 'materias', 'modalMaterias');
-    setupForm('formOrgaos', 'orgaos', 'modalOrgaos');
-    setupForm('formFerramentas', 'ferramentas', 'modalFerramentas');
-    setupForm('formMembros', 'membros', 'modalMembros');
 });
