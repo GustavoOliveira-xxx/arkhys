@@ -106,20 +106,39 @@
                     </select>
                 </div>
 
-                <div class="linha-dupla">
-                    <div class="grupo-campo">
-                        <label for="data_entrega">DATA DE ENTREGA</label>
-                        <input type="date" id="data_entrega" class="campo-entrada" required>
+                <div class="grupo-campo">
+                    <label for="data_entrega">DATA DE ENTREGA</label>
+                    <input type="date" id="data_entrega" class="campo-entrada" required>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="modalidade">MODALIDADE</label>
+                    <select id="modalidade" class="campo-entrada">
+                        <option value="individual">Individual</option>
+                        <option value="grupo">Em grupo</option>
+                    </select>
+                </div>
+
+                <div class="grupo-campo" id="secaoGrupo" hidden>
+                    <label for="qtdeMembros">QUANTIDADE DE MEMBROS</label>
+                    <div class="linha-dupla">
+                        <input type="number" id="qtdeMembros" class="campo-entrada" min="1" max="20" placeholder="Ex: 3">
+                        <button type="button" id="btnGerarMembros" class="botao botao-secundario">Gerar campos</button>
                     </div>
-                    <div class="grupo-campo">
-                        <label for="hora_entrega">HORÁRIO</label>
-                        <input type="time" id="hora_entrega" class="campo-entrada">
+                    <div id="listaCamposMembros" class="lista-campos-dinamicos"></div>
+                </div>
+
+                <div class="grupo-campo">
+                    <label>FERRAMENTAS</label>
+                    <div id="listaFerramentas" class="lista-selecao-multipla">
+                        <p class="texto-vazio-pequeno">Nenhuma ferramenta cadastrada ainda.</p>
                     </div>
                 </div>
 
                 <div class="grupo-campo">
-                    <label for="duracao">DURAÇÃO (MINUTOS)</label>
-                    <input type="number" id="duracao" class="campo-entrada" min="1" placeholder="Ex: 45">
+                    <label for="anexo">FOTO OU DOCUMENTO BASE (OPCIONAL)</label>
+                    <input type="file" id="anexo" class="campo-entrada" accept="image/*,.pdf,.doc,.docx">
+                    <p id="anexoAtual" class="metadado"></p>
                 </div>
 
                 <div class="acoes-form">
