@@ -97,3 +97,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         else { formUnificado.reset(); exibirView('listagem'); carregarItens(); }
     };
 });
+
+botoesFechar.forEach(btn => {
+    btn.onclick = () => {
+        modalGerenciador.hidden = true;
+        modalGerenciador.style.display = 'none';
+    };
+});
+
+botoesCard.forEach(btn => {
+    btn.onclick = () => {
+        modalGerenciador.hidden = false;
+        modalGerenciador.style.display = 'flex';
+        mudarAba(btn.dataset.aba);
+    };
+});
+
