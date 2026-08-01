@@ -1636,6 +1636,13 @@ body.tela-acesso {
 }
 .avatar-perfil img { width: 100%; height: 100%; object-fit: cover; }
 
+.acoes-avatar-perfil {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
 .btn-alterar-foto {
     margin-top: 0.3rem;
     font-size: 0.8rem;
@@ -1660,6 +1667,15 @@ body.tela-acesso {
     flex-shrink: 0;
 }
 .avatar-pequeno img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Dica de "colar imagem" (Ctrl+V) no formulário de tarefa */
+.dica-colar {
+    padding: 0.4rem 0.6rem;
+    background: var(--cor-destaque-fraquissimo);
+    border: 1px dashed var(--cor-borda-clara);
+    border-radius: var(--raio-sm);
+    margin-top: 0.4rem;
+}
 
 /* Link discreto de "remover anexo" no formulário de tarefa */
 .link-remover {
