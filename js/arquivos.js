@@ -1,4 +1,6 @@
 import { supabase } from './supabase-config.js';
+import { iconePorTipo, ehImagem, urlsAssinadasEmLote } from './midia.js';
+import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -14,47 +16,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Abre seletor de arquivos
     btnEnviar.addEventListener('click', () => inputArquivo.click());
 
-    // Faz upload
+    // Faz upload — envia para o storage e registra na tabela `arquivos`,
+    // que é a mesma tabela usada pelos anexos das tarefas.
     inputArquivo.addEventListener('change', async (e) => {
         const arquivo = e.target.files[0];
         if (!arquivo) return;
 
-        const caminho = `${user.id}/${Date.now()}_${arquivo.name}`;
-
-        const { error } = await supabase.storage
-            .from('arquivos')
-            .upload(caminho, arquivo);
+        btnEnviar.disabled = true;
+        const { error } = await enviarERegistrarArquivo({
+            usuarioId: user.id,
+            arquivo,
+            pasta: 'cofre',
+            categoria: 'Geral'
+        });
+        btnEnviar.disabled = false;
+        inputArquivo.value = '';
 
         if (error) alert('Erro ao enviar: ' + error.message);
         else carregarArquivos();
     });
 
-    // Carrega lista
+    // Carrega lista a partir da tabela `arquivos` (inclui os anexos lançados
+    // automaticamente pelas tarefas cadastradas)
     async function carregarArquivos() {
-        const { data, error } = await supabase.storage
-            .from('arquivos')
-            .list(user.id, { sortBy: { column: 'created_at', order: 'desc' } });
+        lista.innerHTML = '<div class="item-vazio">Carregando...</div>';
 
-        if (error || data.length === 0) {
+        const { data, error } = await supabase
+            .from('arquivos')
+            .select('*, tarefas:referencia_tarefa_id ( titulo )')
+            .eq('usuario_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Erro ao carregar arquivos:', error);
+            lista.innerHTML = `<div class="item-vazio">Não foi possível carregar seus arquivos 😕</div>`;
+            return;
+        }
+
+        if (!data || data.length === 0) {
             lista.innerHTML = `<div class="item-vazio">Nenhum arquivo salvo ainda 📁</div>`;
             return;
         }
 
+        // Prévia (miniatura) das imagens, buscada em lote — o bucket é privado
+        const caminhosImagem = data.filter(a => ehImagem(a.nome_arquivo)).map(a => a.url_arquivo);
+        const urlsPrevia = await urlsAssinadasEmLote(caminhosImagem);
+
         lista.innerHTML = data.map(arq => {
-            const caminho = `${user.id}/${arq.name}`;
-            const extensao = arq.name.split('.').pop().toLowerCase();
-            const icone = extensao === 'pdf' ? '📕' : ['jpg','png','jpeg'].includes(extensao) ? '🖼️' : '📄';
+            const previa = urlsPrevia[arq.url_arquivo];
+            const icone = previa ? `<img src="${previa}" alt="">` : iconePorTipo(arq.nome_arquivo);
+            const origem = arq.referencia_tarefa_id
+                ? `📎 Anexo de tarefa${arq.tarefas?.titulo ? ': ' + arq.tarefas.titulo : ''}`
+                : (arq.categoria || 'Geral');
 
             return `
-                <div class="item-tarefa">
-                    <div class="item-icone">${icone}</div>
+                <div class="item-tarefa" data-id="${arq.id}" data-caminho="${arq.url_arquivo}">
+                    <div class="item-icone ${previa ? 'com-imagem' : ''}">${icone}</div>
                     <div class="item-conteudo">
-                        <h4>${arq.name.replace(/^[0-9]+_/, '')}</h4>
-                        <p>Adicionado em ${new Date(arq.created_at).toLocaleDateString('pt-BR')}</p>
+                        <h4>${arq.nome_arquivo}</h4>
+                        <p>${origem} • ${new Date(arq.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div class="item-acoes">
-                        <button class="btn-acao abrir" data-caminho="${caminho}" title="Abrir">👁</button>
-                        <button class="btn-acao excluir" data-caminho="${caminho}" title="Excluir">🗑️</button>
+                        <button class="btn-acao abrir" title="Abrir">👁</button>
+                        <button class="btn-acao excluir" title="Excluir">🗑️</button>
                     </div>
                 </div>
             `;
@@ -63,16 +87,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Ações
     lista.addEventListener('click', async (e) => {
-        const caminho = e.target.dataset.caminho;
+        const item = e.target.closest('.item-tarefa');
+        if (!item) return;
+        const caminho = item.dataset.caminho;
         if (!caminho) return;
 
-        if (e.target.classList.contains('abrir')) {
-            const { data } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 30);
+        if (e.target.closest('.abrir')) {
+            const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 30);
+            if (error) {
+                alert('Erro ao abrir arquivo: ' + error.message);
+                return;
+            }
             window.open(data.signedUrl, '_blank');
         }
 
-        if (e.target.classList.contains('excluir') && confirm('Excluir esse arquivo permanentemente?')) {
-            await supabase.storage.from('arquivos').remove([caminho]);
+        if (e.target.closest('.excluir')) {
+            if (!confirm('Excluir esse arquivo permanentemente? Se ele estiver anexado a uma tarefa, o anexo também será removido de lá.')) return;
+            await removerArquivoPorCaminho(user.id, caminho);
             carregarArquivos();
         }
     });

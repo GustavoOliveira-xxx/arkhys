@@ -1,4 +1,7 @@
 import { supabase } from './supabase-config.js';
+import { urlPublicaMidia, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
+import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
+import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se está logado
@@ -170,6 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tarefas = data || [];
         renderizarLista();
+        abrirEdicaoViaLink();
     }
 
     // ==================================================
@@ -182,6 +186,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tarefa.data_entrega < hoje) return { classe: 'atrasado', texto: 'Atrasada' };
         if (tarefa.data_entrega === hoje) return { classe: 'prazo-hoje', texto: 'Hoje' };
         return { classe: 'proximo', texto: 'Em breve' };
+    }
+
+    // Ícone do item: usa a foto da matéria (se cadastrada) ou um emoji padrão
+    function iconeDoItem(materia) {
+        if (materia?.icone_url) {
+            const url = urlPublicaMidia(materia.icone_url);
+            return `<img src="${url}" alt="${materia.nome}">`;
+        }
+        return '📝';
+    }
+
+    // Pequeno indicativo do tipo de mídia anexada, junto da linha de detalhes
+    function badgeAnexo(tarefa) {
+        if (!tarefa.anexo_path) return '';
+        const nome = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
+        return ` • ${iconePorTipo(nome, tarefa.anexo_tipo)} ${rotuloPorTipo(nome, tarefa.anexo_tipo)}`;
     }
 
     // ==================================================
@@ -203,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         lista.innerHTML = visiveis.map(t => {
-            const materiaNome = materias.find(m => m.id === t.materia_id)?.nome;
+            const materia = materias.find(m => m.id === t.materia_id);
             const st = calcularStatus(t);
             const dataFormatada = new Date(t.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR');
             const modalidadeTexto = t.modalidade === 'grupo'
@@ -212,15 +232,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return `
                 <div class="item-tarefa ${t.concluida ? 'concluida' : ''}" data-id="${t.id}">
-                    <div class="item-icone">📝</div>
+                    <div class="item-icone ${materia?.icone_url ? 'com-imagem' : ''}">${iconeDoItem(materia)}</div>
                     <div class="item-conteudo">
                         <h4>${t.titulo}</h4>
-                        <p>${materiaNome ? materiaNome + ' • ' : ''}${dataFormatada} • ${modalidadeTexto}</p>
+                        <p>${materia ? materia.nome + ' • ' : ''}${dataFormatada} • ${modalidadeTexto}${badgeAnexo(t)}</p>
                     </div>
                     <span class="status ${st.classe}">${st.texto}</span>
                     <div class="item-acoes">
                         <button class="btn-acao concluir" title="${t.concluida ? 'Reabrir' : 'Concluir'}">${t.concluida ? '↺' : '✓'}</button>
-                        <button class="btn-acao editar" title="Editar">✏️</button>
+                        <button type="button" class="btn-saiba-mais" data-acao="saibamais">Saiba mais</button>
                         <button class="btn-acao excluir" title="Excluir">🗑️</button>
                     </div>
                 </div>
@@ -235,14 +255,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==================================================
     // MODAL — ABRIR (NOVA TAREFA)
     // ==================================================
-    btnNovaTarefa.addEventListener('click', () => {
+    function resetarFormulario() {
         form.reset();
         document.getElementById('idTarefa').value = '';
         secaoGrupo.hidden = true;
         listaCamposMembros.innerHTML = '';
         renderizarFerramentas();
-        anexoAtual.textContent = '';
+        anexoAtual.innerHTML = '';
         anexoAtual.dataset.caminho = '';
+        anexoAtual.dataset.remover = '';
+    }
+
+    btnNovaTarefa.addEventListener('click', () => {
+        resetarFormulario();
         tituloModal.textContent = 'Nova Tarefa';
         modal.hidden = false;
     });
@@ -253,23 +278,128 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target === modal) modal.hidden = true;
     });
 
-    // Abrir o anexo atual (link exibido durante a edição)
+    // Abrir o anexo atual (link exibido durante a edição) e remover anexo
     anexoAtual.addEventListener('click', async (e) => {
-        if (e.target.id !== 'linkAbrirAnexo') return;
-        e.preventDefault();
-        const caminho = anexoAtual.dataset.caminho;
-        if (!caminho) return;
+        if (e.target.id === 'linkAbrirAnexo') {
+            e.preventDefault();
+            const caminho = anexoAtual.dataset.caminho;
+            if (!caminho) return;
 
-        const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 30);
-        if (error) {
-            alert('Erro ao abrir anexo: ' + error.message);
-            return;
+            const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 30);
+            if (error) {
+                alert('Erro ao abrir anexo: ' + error.message);
+                return;
+            }
+            window.open(data.signedUrl, '_blank');
         }
-        window.open(data.signedUrl, '_blank');
+
+        if (e.target.id === 'linkRemoverAnexo') {
+            e.preventDefault();
+            anexoAtual.dataset.remover = '1';
+            anexoAtual.innerHTML = '<p class="metadado">Anexo será removido ao salvar.</p>';
+        }
     });
 
     // ==================================================
-    // AÇÕES NA LISTA (concluir / editar / excluir)
+    // PREENCHE O FORMULÁRIO PARA EDIÇÃO
+    // ==================================================
+    function iniciarEdicao(tarefa) {
+        document.getElementById('idTarefa').value = tarefa.id;
+        document.getElementById('titulo').value = tarefa.titulo;
+        document.getElementById('descricao').value = tarefa.descricao || '';
+        document.getElementById('materia').value = tarefa.materia_id || '';
+        document.getElementById('data_entrega').value = tarefa.data_entrega;
+
+        // Modalidade + membros
+        const modalidade = tarefa.modalidade || 'individual';
+        selectModalidade.value = modalidade;
+        const ehGrupo = modalidade === 'grupo';
+        secaoGrupo.hidden = !ehGrupo;
+        const membrosSalvos = tarefa.membros_ids || [];
+        if (ehGrupo) {
+            qtdeMembros.value = membrosSalvos.length || 1;
+            gerarCamposMembros(membrosSalvos.length || 1, membrosSalvos);
+        } else {
+            listaCamposMembros.innerHTML = '';
+            qtdeMembros.value = '';
+        }
+
+        // Ferramentas
+        renderizarFerramentas(tarefa.ferramentas_ids || []);
+
+        // Anexo
+        inputAnexo.value = '';
+        anexoAtual.dataset.remover = '';
+        if (tarefa.anexo_path) {
+            const nomeArquivo = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
+            anexoAtual.innerHTML = `📎 Anexo atual: ${nomeArquivo} — <a href="#" id="linkAbrirAnexo">abrir</a> · <a href="#" id="linkRemoverAnexo" class="link-remover">remover</a>`;
+            anexoAtual.dataset.caminho = tarefa.anexo_path;
+        } else {
+            anexoAtual.innerHTML = '';
+            anexoAtual.dataset.caminho = '';
+        }
+
+        tituloModal.textContent = 'Editar Tarefa';
+        modal.hidden = false;
+    }
+
+    // ==================================================
+    // CONCLUIR / REABRIR
+    // ==================================================
+    async function alternarConclusao(tarefa) {
+        const { error } = await supabase
+            .from('tarefas')
+            .update({ concluida: !tarefa.concluida })
+            .eq('id', tarefa.id);
+
+        if (error) alert('Erro ao atualizar: ' + error.message);
+        else carregarTarefas();
+    }
+
+    // ==================================================
+    // EXCLUIR (tarefa + anexo + registro no cofre)
+    // ==================================================
+    async function excluirTarefa(tarefa) {
+        if (!confirm('Excluir essa tarefa permanentemente?')) return;
+
+        if (tarefa.anexo_path) {
+            await removerArquivoPorCaminho(user.id, tarefa.anexo_path);
+        }
+
+        const { error } = await supabase.from('tarefas').delete().eq('id', tarefa.id);
+        if (error) alert('Erro ao excluir: ' + error.message);
+        else carregarTarefas();
+    }
+
+    // ==================================================
+    // ABRE O MODAL "SAIBA MAIS"
+    // ==================================================
+    function abrirDetalhes(tarefa) {
+        abrirDetalhesTarefa(tarefa, {
+            materias, membros, ferramentas,
+            aoEditar: (t) => { fecharDetalhes(); iniciarEdicao(t); },
+            aoConcluir: async (t) => { fecharDetalhes(); await alternarConclusao(t); },
+            aoExcluir: async (t) => { fecharDetalhes(); await excluirTarefa(t); }
+        });
+    }
+
+    // Se a URL trouxer ?editar=<id> (vindo de "Início" ou "Hoje"), abre a edição direto
+    function abrirEdicaoViaLink() {
+        const params = new URLSearchParams(window.location.search);
+        const idParam = params.get('editar');
+        if (!idParam) return;
+
+        const tarefa = tarefas.find(t => String(t.id) === idParam);
+        if (tarefa) iniciarEdicao(tarefa);
+
+        // Limpa o parâmetro da URL para não reabrir ao atualizar a página
+        params.delete('editar');
+        const novaUrl = window.location.pathname + (params.toString() ? `?${params}` : '');
+        window.history.replaceState({}, '', novaUrl);
+    }
+
+    // ==================================================
+    // AÇÕES NA LISTA (concluir / saiba mais / excluir)
     // ==================================================
     lista.addEventListener('click', async (e) => {
         const item = e.target.closest('.item-tarefa');
@@ -279,68 +409,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tarefa = tarefas.find(t => String(t.id) === id);
         if (!tarefa) return;
 
-        // Marcar como concluída / reabrir
-        if (e.target.classList.contains('concluir')) {
-            const { error } = await supabase
-                .from('tarefas')
-                .update({ concluida: !tarefa.concluida })
-                .eq('id', id);
-
-            if (error) alert('Erro ao atualizar: ' + error.message);
-            else carregarTarefas();
+        if (e.target.closest('.concluir')) {
+            await alternarConclusao(tarefa);
+            return;
         }
 
-        // Editar
-        if (e.target.classList.contains('editar')) {
-            document.getElementById('idTarefa').value = tarefa.id;
-            document.getElementById('titulo').value = tarefa.titulo;
-            document.getElementById('descricao').value = tarefa.descricao || '';
-            document.getElementById('materia').value = tarefa.materia_id || '';
-            document.getElementById('data_entrega').value = tarefa.data_entrega;
-
-            // Modalidade + membros
-            const modalidade = tarefa.modalidade || 'individual';
-            selectModalidade.value = modalidade;
-            const ehGrupo = modalidade === 'grupo';
-            secaoGrupo.hidden = !ehGrupo;
-            const membrosSalvos = tarefa.membros_ids || [];
-            if (ehGrupo) {
-                qtdeMembros.value = membrosSalvos.length || 1;
-                gerarCamposMembros(membrosSalvos.length || 1, membrosSalvos);
-            } else {
-                listaCamposMembros.innerHTML = '';
-                qtdeMembros.value = '';
-            }
-
-            // Ferramentas
-            renderizarFerramentas(tarefa.ferramentas_ids || []);
-
-            // Anexo
-            if (tarefa.anexo_path) {
-                const nomeArquivo = tarefa.anexo_path.split('/').pop().replace(/^[0-9]+_/, '');
-                anexoAtual.innerHTML = `📎 Anexo atual: ${nomeArquivo} — <a href="#" id="linkAbrirAnexo">abrir</a>`;
-                anexoAtual.dataset.caminho = tarefa.anexo_path;
-            } else {
-                anexoAtual.innerHTML = '';
-                anexoAtual.dataset.caminho = '';
-            }
-
-            tituloModal.textContent = 'Editar Tarefa';
-            modal.hidden = false;
+        if (e.target.closest('.excluir')) {
+            await excluirTarefa(tarefa);
+            return;
         }
 
-        // Excluir
-        if (e.target.classList.contains('excluir')) {
-            if (!confirm('Excluir essa tarefa permanentemente?')) return;
-
-            if (tarefa.anexo_path) {
-                await supabase.storage.from('arquivos').remove([tarefa.anexo_path]);
-            }
-
-            const { error } = await supabase.from('tarefas').delete().eq('id', id);
-            if (error) alert('Erro ao excluir: ' + error.message);
-            else carregarTarefas();
-        }
+        // Clique no botão "Saiba mais" ou em qualquer outra parte do cartão
+        abrirDetalhes(tarefa);
     });
 
     // ==================================================
@@ -349,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const id = document.getElementById('idTarefa').value;
+        const idAtual = document.getElementById('idTarefa').value;
         const modalidade = selectModalidade.value;
 
         // Coleta os membros selecionados (só quando for em grupo)
@@ -370,23 +450,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ferramentasIds = Array.from(listaFerramentas.querySelectorAll('input[type="checkbox"]:checked'))
             .map(cb => Number(cb.value));
 
-        // Anexo — mantém o já existente, ou envia um novo se foi escolhido
-        let anexoPath = anexoAtual.dataset.caminho || null;
-        const arquivoSelecionado = inputAnexo.files[0];
-
-        if (arquivoSelecionado) {
-            const caminho = `${user.id}/tarefas/${Date.now()}_${arquivoSelecionado.name}`;
-            const { error: erroUpload } = await supabase.storage
-                .from('arquivos')
-                .upload(caminho, arquivoSelecionado);
-
-            if (erroUpload) {
-                alert('Erro ao enviar o anexo: ' + erroUpload.message);
-                return;
-            }
-            anexoPath = caminho;
-        }
-
         const dadosTarefa = {
             titulo: document.getElementById('titulo').value.trim(),
             descricao: document.getElementById('descricao').value.trim(),
@@ -395,29 +458,66 @@ document.addEventListener('DOMContentLoaded', async () => {
             modalidade,
             membros_ids: membrosIds,
             ferramentas_ids: ferramentasIds,
-            anexo_path: anexoPath,
             usuario_id: user.id
         };
 
+        const botaoSalvar = form.querySelector('.acoes-form button[type="submit"]');
+        botaoSalvar.disabled = true;
+
         let error;
-        if (id) {
-            ({ error } = await supabase.from('tarefas').update(dadosTarefa).eq('id', id));
+        let tarefaId = idAtual ? Number(idAtual) : null;
+
+        if (tarefaId) {
+            ({ error } = await supabase.from('tarefas').update(dadosTarefa).eq('id', tarefaId));
         } else {
             dadosTarefa.concluida = false;
-            ({ error } = await supabase.from('tarefas').insert(dadosTarefa));
+            const resposta = await supabase.from('tarefas').insert(dadosTarefa).select().single();
+            error = resposta.error;
+            if (!error) tarefaId = resposta.data.id;
         }
 
         if (error) {
             alert('Erro ao salvar: ' + error.message);
-        } else {
-            modal.hidden = true;
-            form.reset();
-            secaoGrupo.hidden = true;
-            listaCamposMembros.innerHTML = '';
-            anexoAtual.textContent = '';
-            anexoAtual.dataset.caminho = '';
-            carregarTarefas();
+            botaoSalvar.disabled = false;
+            return;
         }
+
+        // Trata o anexo separadamente, agora que já temos o ID da tarefa
+        const arquivoSelecionado = inputAnexo.files[0];
+        const caminhoAnexoAnterior = anexoAtual.dataset.caminho || null;
+        const removerSolicitado = anexoAtual.dataset.remover === '1';
+
+        if (arquivoSelecionado) {
+            if (caminhoAnexoAnterior) {
+                await removerArquivoPorCaminho(user.id, caminhoAnexoAnterior);
+            }
+
+            const { data, error: erroAnexo } = await enviarERegistrarArquivo({
+                usuarioId: user.id,
+                arquivo: arquivoSelecionado,
+                pasta: 'tarefas',
+                categoria: 'Tarefa',
+                referenciaTarefaId: tarefaId
+            });
+
+            if (erroAnexo) {
+                alert('A tarefa foi salva, mas houve um erro ao enviar o anexo: ' + erroAnexo.message);
+            } else {
+                await supabase.from('tarefas').update({
+                    anexo_path: data.caminho,
+                    anexo_nome: arquivoSelecionado.name,
+                    anexo_tipo: arquivoSelecionado.type || null
+                }).eq('id', tarefaId);
+            }
+        } else if (removerSolicitado && caminhoAnexoAnterior) {
+            await removerArquivoPorCaminho(user.id, caminhoAnexoAnterior);
+            await supabase.from('tarefas').update({ anexo_path: null, anexo_nome: null, anexo_tipo: null }).eq('id', tarefaId);
+        }
+
+        botaoSalvar.disabled = false;
+        modal.hidden = true;
+        resetarFormulario();
+        carregarTarefas();
     });
 
     // ==================================================

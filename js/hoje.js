@@ -1,4 +1,6 @@
 import { supabase } from './supabase-config.js';
+import { urlPublicaMidia, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
+import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se está logado
@@ -11,18 +13,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const listaHoje = document.getElementById('listaHoje');
     const tempoTotalEl = document.getElementById('tempoTotal');
 
+    let tarefasDoDia = [];
+    let materias = [];
+
+    async function carregarMaterias() {
+        const { data } = await supabase.from('materias').select('*').eq('usuario_id', user.id);
+        materias = data || [];
+    }
+
     // ==================================================
     // CARREGA OS COMPROMISSOS DE HOJE
     // ==================================================
     async function carregarHoje() {
         const hoje = new Date().toISOString().split('T')[0];
 
+        // A tabela `tarefas` não tem coluna `hora_entrega`, então a ordenação
+        // usa `titulo` — ordenar por uma coluna inexistente quebrava a página inteira.
         const { data: tarefas, error } = await supabase
             .from('tarefas')
             .select('*')
             .eq('usuario_id', user.id)
             .eq('data_entrega', hoje)
-            .order('hora_entrega', { ascending: true });
+            .order('titulo', { ascending: true });
 
         if (error) {
             console.error('Erro ao carregar compromissos de hoje:', error);
@@ -30,8 +42,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        renderizarLista(tarefas || []);
-        renderizarTempoTotal(tarefas || []);
+        tarefasDoDia = tarefas || [];
+        renderizarLista(tarefasDoDia);
+        renderizarTempoTotal(tarefasDoDia);
+    }
+
+    function iconeDoItem(materiaId) {
+        const materia = materias.find(m => m.id === materiaId);
+        if (materia?.icone_url) {
+            return { html: `<img src="${urlPublicaMidia(materia.icone_url)}" alt="${materia.nome}">`, comImagem: true };
+        }
+        return { html: '📝', comImagem: false };
+    }
+
+    function badgeAnexo(tarefa) {
+        if (!tarefa.anexo_path) return '';
+        const nome = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
+        return ` • ${iconePorTipo(nome, tarefa.anexo_tipo)} ${rotuloPorTipo(nome, tarefa.anexo_tipo)}`;
     }
 
     // ==================================================
@@ -43,18 +70,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const agora = new Date();
-
         listaHoje.innerHTML = tarefas.map(t => {
-            const { classe, texto } = definirStatus(t, agora);
-            const horario = t.hora_entrega ? `${t.hora_entrega.slice(0, 5)} — ` : '';
+            const { classe, texto } = definirStatus(t);
+            const icone = iconeDoItem(t.materia_id);
 
             return `
-                <div class="item-tarefa ${t.concluida ? 'concluida' : ''}">
-                    <div class="item-icone">${t.concluida ? '✅' : '📝'}</div>
+                <div class="item-tarefa ${t.concluida ? 'concluida' : ''}" data-id="${t.id}">
+                    <div class="item-icone ${icone.comImagem ? 'com-imagem' : ''}">${t.concluida ? '✅' : icone.html}</div>
                     <div class="item-conteudo">
                         <h4>${t.titulo}</h4>
-                        <p>${horario}${t.descricao || 'Sem observações'}</p>
+                        <p>${t.descricao || 'Sem observações'}${badgeAnexo(t)}</p>
                     </div>
                     <span class="status ${classe}">${texto}</span>
                     <div class="item-acoes">
@@ -64,34 +89,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                             data-estado="${t.concluida}"
                             title="${t.concluida ? 'Marcar como pendente' : 'Marcar como concluída'}"
                         >${t.concluida ? '↺' : '✓'}</button>
+                        <button type="button" class="btn-saiba-mais" data-acao="saibamais">Saiba mais</button>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    // Define a etiqueta de status de cada compromisso (concluída, atrasada, com horário ou "hoje")
-    function definirStatus(tarefa, agora) {
+    // Define a etiqueta de status de cada compromisso (concluída ou "hoje")
+    function definirStatus(tarefa) {
         if (tarefa.concluida) {
             return { classe: 'normal', texto: 'Concluída' };
         }
-
-        if (tarefa.hora_entrega) {
-            const [horas, minutos] = tarefa.hora_entrega.split(':');
-            const horarioTarefa = new Date(agora);
-            horarioTarefa.setHours(Number(horas), Number(minutos), 0, 0);
-
-            if (horarioTarefa < agora) {
-                return { classe: 'atrasado', texto: 'Atrasado' };
-            }
-            return { classe: 'prazo-hoje', texto: tarefa.hora_entrega.slice(0, 5) };
-        }
-
         return { classe: 'prazo-hoje', texto: 'Hoje' };
     }
 
     // ==================================================
     // CALCULA O TEMPO TOTAL PENDENTE PARA HOJE
+    // (a coluna `duracao` não existe na tabela; mantido apenas se um dia for adicionada)
     // ==================================================
     function renderizarTempoTotal(tarefas) {
         if (!tempoTotalEl) return;
@@ -114,18 +129,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         tempoTotalEl.textContent = `⏱ ${textoTempo} de tarefas pendentes hoje`;
     }
 
-    // ==================================================
-    // MARCA / DESMARCA UMA TAREFA COMO CONCLUÍDA
-    // ==================================================
-    listaHoje.addEventListener('click', async (e) => {
-        const botao = e.target.closest('.concluir');
-        if (!botao) return;
+    function abrirDetalhes(tarefa) {
+        abrirDetalhesTarefa(tarefa, {
+            materias,
+            linkEditar: `tarefas.html?editar=${tarefa.id}`,
+            aoConcluir: async (t) => {
+                fecharDetalhes();
+                await alternarConclusao(t.id, t.concluida);
+            }
+        });
+    }
 
-        const id = botao.dataset.id;
-        const estadoAtual = botao.dataset.estado === 'true';
-
-        botao.disabled = true;
-
+    async function alternarConclusao(id, estadoAtual) {
         const { error } = await supabase
             .from('tarefas')
             .update({ concluida: !estadoAtual })
@@ -134,12 +149,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (error) {
             alert('❌ Erro ao atualizar tarefa: ' + error.message);
-            botao.disabled = false;
+            return;
+        }
+        carregarHoje();
+    }
+
+    // ==================================================
+    // AÇÕES DA LISTA — concluir / desmarcar / saiba mais
+    // ==================================================
+    listaHoje.addEventListener('click', async (e) => {
+        const item = e.target.closest('.item-tarefa');
+        if (!item) return;
+
+        const botaoConcluir = e.target.closest('.concluir');
+        if (botaoConcluir) {
+            botaoConcluir.disabled = true;
+            await alternarConclusao(botaoConcluir.dataset.id, botaoConcluir.dataset.estado === 'true');
             return;
         }
 
-        carregarHoje();
+        const tarefa = tarefasDoDia.find(t => String(t.id) === item.dataset.id);
+        if (tarefa) abrirDetalhes(tarefa);
     });
 
-    carregarHoje();
+    await carregarMaterias();
+    await carregarHoje();
 });
