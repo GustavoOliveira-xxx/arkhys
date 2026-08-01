@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const avatarPerfil = document.getElementById('avatarPerfil');
     const avatarIniciais = document.getElementById('avatarIniciais');
     const btnAlterarFoto = document.getElementById('btnAlterarFoto');
+    const btnRemoverFoto = document.getElementById('btnRemoverFoto');
     const inputFotoPerfil = document.getElementById('inputFotoPerfil');
 
     // Dados do usuário
@@ -41,8 +42,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderizarAvatar() {
         if (perfil?.foto_url) {
             avatarPerfil.innerHTML = `<img src="${urlPublicaMidia(perfil.foto_url)}" alt="Foto de perfil">`;
+            btnRemoverFoto.hidden = false;
         } else {
             avatarPerfil.innerHTML = `<span id="avatarIniciais">${nome.trim().charAt(0).toUpperCase() || '?'}</span>`;
+            btnRemoverFoto.hidden = true;
         }
     }
 
@@ -96,6 +99,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         inputFotoPerfil.value = '';
         btnAlterarFoto.disabled = false;
         btnAlterarFoto.textContent = '📷 Alterar foto';
+    });
+
+    // ==================================================
+    // REMOVER FOTO DE PERFIL
+    // ==================================================
+    btnRemoverFoto.addEventListener('click', async () => {
+        if (!perfil?.foto_url) return;
+        if (!confirm('Remover sua foto de perfil? Você poderá anexar outra depois.')) return;
+
+        btnRemoverFoto.disabled = true;
+        btnRemoverFoto.textContent = 'Removendo...';
+
+        const caminhoAntigo = perfil.foto_url;
+
+        const { error: erroUpdate } = await supabase
+            .from('perfil')
+            .update({ foto_url: null })
+            .eq('usuario_id', user.id);
+
+        if (erroUpdate) {
+            alert('Erro ao remover a foto: ' + erroUpdate.message);
+            btnRemoverFoto.disabled = false;
+            btnRemoverFoto.textContent = '🗑️ Remover foto';
+            return;
+        }
+
+        await removerMidiaPublica(caminhoAntigo);
+
+        perfil = { ...perfil, foto_url: null };
+        renderizarAvatar();
+        btnRemoverFoto.disabled = false;
+        btnRemoverFoto.textContent = '🗑️ Remover foto';
     });
 
     // Salvar alterações (nome)

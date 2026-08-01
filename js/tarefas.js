@@ -278,6 +278,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target === modal) modal.hidden = true;
     });
 
+    // ==================================================
+    // COLAR IMAGEM DA ÁREA DE TRANSFERÊNCIA (Ctrl+V)
+    // Funciona em qualquer campo do formulário — captura o evento
+    // de paste, pega a imagem do clipboard e coloca no input de anexo.
+    // ==================================================
+    modal.addEventListener('paste', (e) => {
+        const itens = e.clipboardData?.items;
+        if (!itens) return;
+
+        const itemImagem = Array.from(itens).find(item => item.type.startsWith('image/'));
+        if (!itemImagem) return;
+
+        const arquivo = itemImagem.getAsFile();
+        if (!arquivo) return;
+
+        e.preventDefault();
+
+        const extensao = (itemImagem.type.split('/')[1] || 'png').toLowerCase();
+        const arquivoRenomeado = new File([arquivo], `imagem-colada-${Date.now()}.${extensao}`, { type: itemImagem.type });
+
+        const transferenciaDados = new DataTransfer();
+        transferenciaDados.items.add(arquivoRenomeado);
+        inputAnexo.files = transferenciaDados.files;
+
+        // Se havia um anexo anterior marcado, cancela a marcação de remoção
+        // (o novo arquivo colado vai substituí-lo ao salvar)
+        anexoAtual.dataset.remover = '';
+        anexoAtual.innerHTML = `📎 Imagem colada pronta para enviar: ${arquivoRenomeado.name}`;
+    });
+
     // Abrir o anexo atual (link exibido durante a edição) e remover anexo
     anexoAtual.addEventListener('click', async (e) => {
         if (e.target.id === 'linkAbrirAnexo') {
