@@ -63,10 +63,12 @@
         </header>
 
         <div class="grade-cards">
-            <div class="card-resumo">
-                <div class="card-icone">👤</div>
+            <div class="card-resumo card-perfil-avatar">
+                <div class="avatar-perfil" id="avatarPerfil"><span id="avatarIniciais">?</span></div>
                 <div class="card-titulo" id="nomePerfil">Carregando...</div>
                 <div class="card-detalhe" id="emailPerfil">Carregando...</div>
+                <button type="button" id="btnAlterarFoto" class="botao botao-secundario btn-alterar-foto">📷 Alterar foto</button>
+                <input type="file" id="inputFotoPerfil" accept="image/*" hidden>
             </div>
 
             <div class="card-resumo">
