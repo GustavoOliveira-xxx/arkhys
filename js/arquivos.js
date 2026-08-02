@@ -1,5 +1,5 @@
 import { supabase } from './supabase-config.js';
-import { iconePorTipo, ehImagem, urlsAssinadasEmLote } from './midia.js';
+import { iconePorTipo, ehImagem, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
 import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
 import { concederXp } from './xp-service.js';
 
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : (arq.categoria || 'Geral');
 
             return `
-                <div class="item-tarefa" data-id="${arq.id}" data-caminho="${arq.url_arquivo}">
+                <div class="item-tarefa" data-id="${arq.id}" data-caminho="${arq.url_arquivo}" data-nome="${arq.nome_arquivo}">
                     <div class="item-icone ${previa ? 'com-imagem' : ''}">${icone}</div>
                     <div class="item-conteudo">
                         <h4>${arq.nome_arquivo}</h4>
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Erro ao abrir arquivo: ' + error.message);
                 return;
             }
-            window.open(data.signedUrl, '_blank');
+            abrirVisualizadorArquivo(data.signedUrl, item.dataset.nome);
         }
 
         if (e.target.closest('.excluir')) {

@@ -4,7 +4,7 @@
 // existe um elemento fixo no HTML de cada página).
 // ==================================================
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, nomeExibicao, extensaoDoArquivo } from './midia.js';
+import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, nomeExibicao, extensaoDoArquivo, abrirLightboxImagem } from './midia.js';
 
 let overlayAtual = null;
 
@@ -230,27 +230,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
 
         // Clique na imagem do anexo abre o lightbox (visualização ampliada)
         overlay.querySelector('[data-acao="ampliar"]')?.addEventListener('click', (e) => {
-            abrirLightbox(e.currentTarget.dataset.url, tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path));
+            abrirLightboxImagem(e.currentTarget.dataset.url, tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path));
         });
     }
-}
-
-// ==================================================
-// LIGHTBOX — visualização ampliada da imagem anexada
-// ==================================================
-function abrirLightbox(url, nome) {
-    document.getElementById('lightboxAnexo')?.remove();
-    const lightbox = document.createElement('div');
-    lightbox.id = 'lightboxAnexo';
-    lightbox.className = 'lightbox-overlay';
-    lightbox.innerHTML = `
-        <img src="${url}" alt="${nome}">
-        <button type="button" class="btn-acao lightbox-fechar" title="Fechar">✕</button>
-    `;
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.classList.contains('lightbox-fechar')) lightbox.remove();
-    });
-    document.body.appendChild(lightbox);
 }
 
 // ==================================================
@@ -285,19 +267,48 @@ async function compartilharTarefa(tarefa, materia) {
 // IMPRIMIR — abre uma janela com um resumo bonito e
 // chama a impressão (o usuário pode escolher "Salvar como PDF")
 // ==================================================
-function imprimirTarefa(tarefa, materia, membros, ferramentas) {
+async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
     const st = calcularStatus(tarefa);
     const nomesMembros = tarefa.modalidade === 'grupo'
         ? (tarefa.membros_ids || []).map(id => membros.find(m => m.id === id)?.nome).filter(Boolean)
         : [];
     const nomesFerramentas = (tarefa.ferramentas_ids || []).map(id => ferramentas.find(f => f.id === id)?.nome).filter(Boolean);
 
+    // Abre a janela ANTES de qualquer await, senão o navegador trata
+    // como popup não-solicitado e bloqueia.
     const janela = window.open('', '_blank', 'width=800,height=900');
     if (!janela) {
         alert('Seu navegador bloqueou a janela de impressão. Permita pop-ups para este site.');
         return;
     }
+    janela.document.write('<p style="font-family: sans-serif; padding: 40px;">Preparando impressão...</p>');
 
+    // Busca o anexo (se houver) pra embutir no impresso — foto aparece
+    // como imagem, PDF aparece como preview embutido
+    let anexoHtml = '';
+    if (tarefa.anexo_path) {
+        const nomeArquivo = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
+        const { data } = await supabase.storage.from('arquivos').createSignedUrl(tarefa.anexo_path, 60 * 30);
+        const url = data?.signedUrl;
+
+        if (url && ehImagem(nomeArquivo, tarefa.anexo_tipo)) {
+            anexoHtml = `
+                <div class="anexo-impressao">
+                    <div class="rotulo">Anexo</div>
+                    <img src="${url}" alt="${nomeArquivo}">
+                </div>`;
+        } else if (url && extensaoDoArquivo(nomeArquivo) === 'pdf') {
+            anexoHtml = `
+                <div class="anexo-impressao anexo-impressao-pdf">
+                    <div class="rotulo">Anexo (PDF) — ${nomeArquivo}</div>
+                    <embed src="${url}" type="application/pdf">
+                </div>`;
+        } else if (nomeArquivo) {
+            anexoHtml = `<div class="linha"><span class="rotulo">Anexo</span><span>${nomeArquivo}</span></div>`;
+        }
+    }
+
+    janela.document.open();
     janela.document.write(`
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -315,8 +326,12 @@ function imprimirTarefa(tarefa, materia, membros, ferramentas) {
                 .rotulo { font-weight: bold; width: 140px; flex-shrink: 0; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; color: #555; }
                 .descricao { margin: 20px 0; padding: 16px; background: #f7f5f2; border-left: 3px solid #c1121f; }
                 ul { margin: 4px 0 0; padding-left: 20px; }
+                .anexo-impressao { margin: 24px 0; page-break-inside: avoid; }
+                .anexo-impressao .rotulo { font-weight: bold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 8px; }
+                .anexo-impressao img { max-width: 100%; max-height: 600px; display: block; border: 1px solid #ddd; border-radius: 4px; }
+                .anexo-impressao-pdf embed { width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 4px; }
                 footer { margin-top: 40px; text-align: center; font-size: 0.75rem; color: #999; }
-                @media print { body { margin: 0; } }
+                @media print { body { margin: 0; } .anexo-impressao-pdf embed { height: 90vh; } }
             </style>
         </head>
         <body>
@@ -330,7 +345,7 @@ function imprimirTarefa(tarefa, materia, membros, ferramentas) {
             <div class="linha"><span class="rotulo">Modalidade</span><span>${tarefa.modalidade === 'grupo' ? 'Em grupo' : 'Individual'}</span></div>
             ${nomesMembros.length ? `<div class="linha"><span class="rotulo">Membros</span><ul>${nomesMembros.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
             ${nomesFerramentas.length ? `<div class="linha"><span class="rotulo">Ferramentas</span><ul>${nomesFerramentas.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
-            ${tarefa.anexo_nome ? `<div class="linha"><span class="rotulo">Anexo</span><span>${tarefa.anexo_nome}</span></div>` : ''}
+            ${anexoHtml}
             <footer>Gerado por Arkhys — Organize · Evolua · Conquiste</footer>
         </body>
         </html>

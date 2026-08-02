@@ -98,3 +98,62 @@ export async function urlsAssinadasEmLote(caminhos = [], duracaoSegundos = 60 * 
     });
     return mapa;
 }
+
+// ==================================================
+// VISUALIZADOR DE ANEXOS — lightbox de imagem e preview
+// de PDF, compartilhados entre o modal "Saiba mais" das
+// tarefas e o Cofre de Arquivos, para manter a mesma
+// experiência de galeria nos dois lugares.
+// ==================================================
+function fecharVisualizador() {
+    document.getElementById('lightboxAnexo')?.remove();
+}
+
+function montarOverlayVisualizador(conteudoInterno, classeExtra = '') {
+    fecharVisualizador();
+    const lightbox = document.createElement('div');
+    lightbox.id = 'lightboxAnexo';
+    lightbox.className = `lightbox-overlay ${classeExtra}`.trim();
+    lightbox.innerHTML = `${conteudoInterno}<button type="button" class="btn-acao lightbox-fechar" title="Fechar">✕</button>`;
+
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox || e.target.classList.contains('lightbox-fechar')) lightbox.remove();
+    });
+    document.addEventListener('keydown', function aoEsc(e) {
+        if (e.key === 'Escape') { lightbox.remove(); document.removeEventListener('keydown', aoEsc); }
+    });
+
+    document.body.appendChild(lightbox);
+    return lightbox;
+}
+
+// Amplia uma imagem em tela cheia
+export function abrirLightboxImagem(url, nome = '') {
+    montarOverlayVisualizador(`<img src="${url}" alt="${nome}">`);
+}
+
+// Visualiza um PDF embutido, sem obrigar o download
+export function abrirVisualizadorPdf(url, nome = '') {
+    montarOverlayVisualizador(`
+        <div class="lightbox-pdf-caixa">
+            <iframe src="${url}#toolbar=1" title="${nome}"></iframe>
+            <div class="detalhe-anexo-legenda">
+                <span>📕 ${nome}</span>
+                <div>
+                    <a href="${url}" target="_blank" rel="noopener">Abrir em nova aba</a>
+                    <a href="${url}" download="${nome}">⬇️ Baixar</a>
+                </div>
+            </div>
+        </div>
+    `, 'lightbox-pdf');
+}
+
+// Abre o visualizador certo pra qualquer anexo (imagem, PDF, ou nova
+// aba/download pros demais tipos), a partir de uma URL já assinada
+// e do nome do arquivo — usado tanto nas tarefas quanto no Cofre.
+export function abrirVisualizadorArquivo(url, nome = '', tipoMime = '') {
+    if (!url) return;
+    if (ehImagem(nome, tipoMime)) return abrirLightboxImagem(url, nome);
+    if (extensaoDoArquivo(nome) === 'pdf') return abrirVisualizadorPdf(url, nome);
+    window.open(url, '_blank');
+}

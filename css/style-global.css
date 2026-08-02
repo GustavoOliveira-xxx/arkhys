@@ -1846,11 +1846,13 @@ body.tela-acesso {
     padding: 0.15rem 0;
 }
 
-/* Lightbox — imagem do anexo ampliada em tela cheia */
+/* Lightbox — imagem do anexo ampliada em tela cheia. Precisa ficar
+   ACIMA do modal-overlay (z-index 1000), já que é aberto de dentro
+   do modal "Saiba mais" e também do Cofre de Arquivos. */
 .lightbox-overlay {
     position: fixed;
     inset: 0;
-    z-index: 300;
+    z-index: 1100;
     background: rgba(5, 4, 7, 0.92);
     display: flex;
     align-items: center;
@@ -1868,6 +1870,30 @@ body.tela-acesso {
     position: absolute;
     top: var(--espaco-md);
     right: var(--espaco-md);
+}
+
+/* Variante do lightbox pra preview de PDF (mesma galeria, mas com
+   uma caixa em vez da imagem em tela cheia) */
+.lightbox-pdf-caixa {
+    width: min(900px, 100%);
+    height: min(85vh, 900px);
+    background: var(--cor-superficie);
+    border-radius: var(--raio-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+    box-shadow: var(--sombra-card-hover);
+}
+.lightbox-pdf-caixa iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: #fff;
+}
+.lightbox-pdf-caixa .detalhe-anexo-legenda {
+    background: var(--cor-superficie);
+    flex-shrink: 0;
 }
 
 /* Cabeçalho do modal com múltiplos botões de ação (compartilhar/imprimir/fechar) */
