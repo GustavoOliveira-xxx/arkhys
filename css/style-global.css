@@ -2131,42 +2131,166 @@ body.tela-acesso {
 /* ==========================================================================
    OVERLAY GLOBAL DE CARREGAMENTO — todas as páginas
    ========================================================================== */
+/* ==================================================
+   NOVO LOADER INOVADOR ARKHYS (Premium Edition)
+   ================================================== */
+
 .loading-global-overlay {
     position: fixed;
     inset: 0;
-    z-index: 2000;
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--cor-fundo);
+    background: radial-gradient(circle at center, rgba(12, 10, 16, 0.98) 0%, #050407 100%);
+    backdrop-filter: blur(12px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .loading-global-overlay.visivel {
     opacity: 1;
     pointer-events: all;
 }
+
 .loading-global-caixa {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--espaco-sm);
+    gap: 2.5rem;
+    transform: translateY(0);
+    transition: transform 0.6s var(--curva-suave);
 }
+
+.loading-global-overlay:not(.visivel) .loading-global-caixa {
+    transform: translateY(-20px);
+}
+
+.loading-logo-wrapper {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .loading-global-logo {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    animation: pulsar-logo-arkhys 1.4s ease-in-out infinite;
+    width: 90px;
+    height: 90px;
+    z-index: 2;
+    filter: drop-shadow(0 0 20px rgba(193, 18, 31, 0.5));
+    animation: arkhys-logo-float 3s ease-in-out infinite;
 }
+
+/* Anéis Orbitais Estilo "Selo Místico/Spartano" */
+.loading-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 2px solid transparent;
+    border-top-color: var(--cor-destaque);
+    border-bottom-color: var(--cor-destaque);
+    border-radius: 50%;
+    animation: arkhys-spin 3s linear infinite;
+    opacity: 0.8;
+}
+
+.loading-ring-inner {
+    position: absolute;
+    inset: 12px;
+    border: 1px solid rgba(193, 18, 31, 0.2);
+    border-left-color: var(--cor-destaque);
+    border-right-color: var(--cor-destaque);
+    border-radius: 50%;
+    animation: arkhys-spin-reverse 2s linear infinite;
+}
+
+.loading-logo-wrapper::after {
+    content: '';
+    position: absolute;
+    inset: -15px;
+    border: 1px dashed rgba(193, 18, 31, 0.1);
+    border-radius: 50%;
+    animation: arkhys-spin 12s linear infinite;
+}
+
+.loading-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
 .loading-global-texto {
     font-family: var(--fonte-mono);
-    font-size: 0.78rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    font-size: 0.75rem;
     color: var(--texto-secundario);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(193, 18, 31, 0.3);
+    animation: arkhys-text-pulse 2s ease-in-out infinite;
 }
-@keyframes pulsar-logo-arkhys {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(0.88); opacity: 0.65; }
+
+.loading-bar-container {
+    width: 200px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.loading-bar-fill {
+    position: absolute;
+    height: 100%;
+    width: 60%;
+    background: linear-gradient(90deg, transparent, var(--cor-destaque), transparent);
+    animation: arkhys-progress 2s infinite cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Partículas de "Brasas" */
+.loading-particles span {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--cor-destaque);
+    border-radius: 50%;
+    filter: blur(1px);
+    opacity: 0;
+    animation: arkhys-particles 2s infinite ease-out;
+    animation-delay: calc(var(--i) * 0.4s);
+}
+
+@keyframes arkhys-particles {
+    0% { transform: translate(0, 0) scale(1); opacity: 0; }
+    20% { opacity: 0.8; }
+    100% { transform: translate(calc(var(--i) * 20px - 60px), -80px) scale(0); opacity: 0; }
+}
+
+/* Animações */
+@keyframes arkhys-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes arkhys-spin-reverse {
+    to { transform: rotate(-360deg); }
+}
+
+@keyframes arkhys-logo-float {
+    0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 20px rgba(193, 18, 31, 0.4)); }
+    50% { transform: translateY(-8px) scale(1.03); filter: drop-shadow(0 0 35px rgba(193, 18, 31, 0.7)); }
+}
+
+@keyframes arkhys-text-pulse {
+    0%, 100% { opacity: 0.4; letter-spacing: 5px; }
+    50% { opacity: 1; letter-spacing: 7px; }
+}
+
+@keyframes arkhys-progress {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }

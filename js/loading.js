@@ -1,15 +1,5 @@
 // ==================================================
-// OVERLAY GLOBAL DE CARREGAMENTO
-// Usa a logo do Arkhys (versão quadrada) como indicador visual.
-// Duas formas de uso:
-//   1) Automática — aparece assim que a página começa a carregar
-//      e some sozinho pouco depois de o DOM estar pronto, cobrindo
-//      o "flash" inicial enquanto os módulos/dados carregam.
-//   2) Manual — chame mostrarCarregamento()/esconderCarregamento()
-//      em qualquer operação assíncrona (salvar, enviar anexo, etc.)
-//      pra dar feedback visual durante a espera.
-// Suporta chamadas aninhadas: só esconde de fato quando o número
-// de "esconder" bate com o de "mostrar".
+// NOVO SISTEMA DE CARREGAMENTO ARKHYS (Premium Edition)
 // ==================================================
 
 let overlay = null;
@@ -23,8 +13,24 @@ function garantirOverlay() {
     overlay.className = 'loading-global-overlay';
     overlay.innerHTML = `
         <div class="loading-global-caixa">
-            <img src="assets/logo-arkhys-b.png" alt="Arkhys" class="loading-global-logo">
-            <span class="loading-global-texto">Carregando...</span>
+            <div class="loading-logo-wrapper">
+                <div class="loading-ring"></div>
+                <div class="loading-ring-inner"></div>
+                <img src="assets/logo-arkhys-b.png" alt="Arkhys" class="loading-global-logo">
+                <div class="loading-particles">
+                    <span style="--i:1"></span>
+                    <span style="--i:2"></span>
+                    <span style="--i:3"></span>
+                    <span style="--i:4"></span>
+                    <span style="--i:5"></span>
+                </div>
+            </div>
+            <div class="loading-info">
+                <span class="loading-global-texto">Iniciando Protocolo...</span>
+                <div class="loading-bar-container">
+                    <div class="loading-bar-fill"></div>
+                </div>
+            </div>
         </div>
     `;
 
@@ -37,25 +43,37 @@ function garantirOverlay() {
     return overlay;
 }
 
-export function mostrarCarregamento(mensagem = 'Carregando...') {
+/**
+ * Mostra o overlay de carregamento
+ * @param {string} mensagem - Mensagem a ser exibida
+ */
+export function mostrarCarregamento(mensagem = 'Iniciando Protocolo...') {
     contador++;
     const el = garantirOverlay();
     const texto = el.querySelector('.loading-global-texto');
     if (texto) texto.textContent = mensagem;
     el.classList.add('visivel');
+    document.body.style.overflow = 'hidden'; // Trava o scroll
 }
 
+/**
+ * Esconde o overlay de carregamento
+ */
 export function esconderCarregamento() {
     contador = Math.max(0, contador - 1);
     if (contador === 0 && overlay) {
         overlay.classList.remove('visivel');
+        setTimeout(() => {
+            if (!overlay.classList.contains('visivel')) {
+                document.body.style.overflow = ''; // Destrava o scroll após a transição
+            }
+        }, 500);
     }
 }
 
-// Cobre o carregamento inicial de qualquer página automaticamente.
-mostrarCarregamento('Carregando Arkhys...');
+// Inicialização automática para cobrir o carregamento da página
+mostrarCarregamento('Sincronizando Arkhys...');
 document.addEventListener('DOMContentLoaded', () => {
-    // Pequeno atraso pra evitar um "pisca" caso o carregamento real
-    // termine instantaneamente — mantém a transição suave.
-    setTimeout(esconderCarregamento, 250);
+    // Pequeno delay para garantir que a animação seja apreciada
+    setTimeout(esconderCarregamento, 1200);
 });
