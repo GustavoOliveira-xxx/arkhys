@@ -13,6 +13,30 @@ export function extensaoDoArquivo(nomeArquivo = '') {
     return nomeArquivo.split('.').pop().toLowerCase();
 }
 
+// ==================================================
+// SANITIZA O NOME DO ARQUIVO ANTES DE MONTAR A CHAVE DE STORAGE
+// O Supabase Storage só aceita chaves com caracteres seguros
+// (letras sem acento, números, "-", "_", "." e "/"). Nomes de
+// arquivo com espaços, acentos ou símbolos (ex: "computação em
+// nuvem - arkhys.png") geram "Invalid key" no upload. Esta função
+// remove acentos, troca espaços por "-" e elimina qualquer
+// caractere fora do conjunto seguro, preservando a extensão.
+// ==================================================
+export function sanitizarNomeArquivo(nomeArquivo = '') {
+    const partes = nomeArquivo.split('.');
+    const extensao = partes.length > 1 ? partes.pop().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+    const base = partes.join('.')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9\-_]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    const nomeBase = base || 'arquivo';
+    return extensao ? `${nomeBase}.${extensao}` : nomeBase;
+}
+
 export function ehImagem(nomeArquivo = '', tipoMime = '') {
     if (tipoMime) return tipoMime.startsWith('image/');
     return EXTENSOES_IMAGEM.includes(extensaoDoArquivo(nomeArquivo));

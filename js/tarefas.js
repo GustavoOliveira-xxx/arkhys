@@ -2,6 +2,7 @@ import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
 import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
+import { ganharXp, ganharXpPorConclusaoDeTarefa, XP_ACOES } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se está logado
@@ -204,6 +205,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return ` • ${iconePorTipo(nome, tarefa.anexo_tipo)} ${rotuloPorTipo(nome, tarefa.anexo_tipo)}`;
     }
 
+    // Badge visual da dificuldade da tarefa
+    function badgeDificuldade(tarefa) {
+        const mapa = { facil: { cor: 'facil', texto: '🟢 Fácil' }, medio: { cor: 'medio', texto: '🟡 Médio' }, dificil: { cor: 'dificil', texto: '🔴 Difícil' } };
+        const info = mapa[tarefa.dificuldade] || mapa.medio;
+        return `<span class="badge-dificuldade ${info.cor}">${info.texto}</span>`;
+    }
+
     // ==================================================
     // RENDERIZA A LISTA (aplicando os filtros selecionados)
     // ==================================================
@@ -237,6 +245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <h4>${t.titulo}</h4>
                         <p>${materia ? materia.nome + ' • ' : ''}${dataFormatada} • ${modalidadeTexto}${badgeAnexo(t)}</p>
                     </div>
+                    ${badgeDificuldade(t)}
                     <span class="status ${st.classe}">${st.texto}</span>
                     <div class="item-acoes">
                         <button class="btn-acao concluir" title="${t.concluida ? 'Reabrir' : 'Concluir'}">${t.concluida ? '↺' : '✓'}</button>
@@ -339,6 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('descricao').value = tarefa.descricao || '';
         document.getElementById('materia').value = tarefa.materia_id || '';
         document.getElementById('data_entrega').value = tarefa.data_entrega;
+        document.getElementById('dificuldade').value = tarefa.dificuldade || 'medio';
 
         // Modalidade + membros
         const modalidade = tarefa.modalidade || 'individual';
@@ -377,13 +387,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // CONCLUIR / REABRIR
     // ==================================================
     async function alternarConclusao(tarefa) {
+        const vaiConcluir = !tarefa.concluida;
         const { error } = await supabase
             .from('tarefas')
-            .update({ concluida: !tarefa.concluida })
+            .update({ concluida: vaiConcluir })
             .eq('id', tarefa.id);
 
-        if (error) alert('Erro ao atualizar: ' + error.message);
-        else carregarTarefas();
+        if (error) {
+            alert('Erro ao atualizar: ' + error.message);
+            return;
+        }
+
+        if (vaiConcluir) {
+            await ganharXpPorConclusaoDeTarefa(user.id, tarefa);
+        }
+
+        carregarTarefas();
     }
 
     // ==================================================
@@ -485,6 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             descricao: document.getElementById('descricao').value.trim(),
             materia_id: document.getElementById('materia').value || null,
             data_entrega: document.getElementById('data_entrega').value,
+            dificuldade: document.getElementById('dificuldade').value || 'medio',
             modalidade,
             membros_ids: membrosIds,
             ferramentas_ids: ferramentasIds,
@@ -496,6 +516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let error;
         let tarefaId = idAtual ? Number(idAtual) : null;
+        const eraNova = !tarefaId;
 
         if (tarefaId) {
             ({ error } = await supabase.from('tarefas').update(dadosTarefa).eq('id', tarefaId));
@@ -510,6 +531,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Erro ao salvar: ' + error.message);
             botaoSalvar.disabled = false;
             return;
+        }
+
+        if (eraNova) {
+            await ganharXp(user.id, XP_ACOES.TAREFA_CRIADA, 'Nova tarefa criada', `tarefa-${tarefaId}-criada`);
         }
 
         // Trata o anexo separadamente, agora que já temos o ID da tarefa
@@ -538,6 +563,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     anexo_nome: arquivoSelecionado.name,
                     anexo_tipo: arquivoSelecionado.type || null
                 }).eq('id', tarefaId);
+
+                await ganharXp(user.id, XP_ACOES.ANEXO_ENVIADO, 'Anexo enviado', `anexo-tarefa-${tarefaId}-${Date.now()}`);
             }
         } else if (removerSolicitado && caminhoAnexoAnterior) {
             await removerArquivoPorCaminho(user.id, caminhoAnexoAnterior);

@@ -1781,3 +1781,190 @@ body.tela-acesso {
 }
 .detalhe-anexo-arquivo:hover { border-color: var(--cor-destaque); }
 .detalhe-anexo-icone { font-size: 1.3rem; flex-shrink: 0; }
+/* ==================================================
+   PÁGINA DE XP — resumo do nível, grade de níveis,
+   badge de dificuldade e toast de XP ganho
+   ================================================== */
+
+.card-xp-resumo {
+    display: block;
+    padding: var(--espaco-lg);
+}
+
+.xp-resumo-topo {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--espaco-md);
+    margin-bottom: var(--espaco-md);
+}
+
+.xp-nome-nivel {
+    font-family: var(--fonte-titulo);
+    font-size: 1.6rem;
+    color: var(--texto-principal);
+    margin-top: 0.2rem;
+}
+
+.xp-numero-nivel {
+    font-family: var(--fonte-titulo);
+    font-size: 2.6rem;
+    line-height: 1;
+    color: var(--cor-destaque);
+    text-shadow: 0 0 24px var(--cor-destaque-fraco);
+}
+
+.barra-xp-grande {
+    height: 12px;
+    margin-top: var(--espaco-sm);
+}
+
+.xp-resumo-rodape {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--espaco-sm);
+    font-family: var(--fonte-mono);
+    font-size: 0.8rem;
+    color: var(--texto-terciario);
+}
+
+.grade-niveis {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--espaco-md);
+}
+
+.cartao-nivel {
+    position: relative;
+    padding: var(--espaco-md);
+    border-radius: var(--raio-md);
+    border: 1px solid var(--cor-borda);
+    background: var(--cor-superficie);
+    transition: all var(--duracao-rapida);
+}
+
+.cartao-nivel-numero {
+    font-family: var(--fonte-titulo);
+    font-size: 1.4rem;
+    color: var(--texto-terciario);
+}
+
+.cartao-nivel-nome {
+    margin-top: 0.3rem;
+    font-weight: var(--peso-medio);
+    color: var(--texto-principal);
+}
+
+.cartao-nivel-xp {
+    margin-top: 0.4rem;
+    font-family: var(--fonte-mono);
+    font-size: 0.75rem;
+    color: var(--texto-terciario);
+}
+
+.cartao-nivel.desbloqueado {
+    border-color: var(--cor-destaque-fraco);
+}
+
+.cartao-nivel.atual {
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraco);
+    box-shadow: 0 0 0 1px var(--cor-destaque), 0 8px 24px -12px var(--cor-destaque);
+}
+
+.cartao-nivel.atual .cartao-nivel-numero,
+.cartao-nivel.atual .cartao-nivel-nome {
+    color: var(--cor-destaque);
+}
+
+.cartao-nivel.bloqueado {
+    opacity: 0.5;
+}
+
+.cartao-nivel-tag {
+    display: inline-block;
+    margin-top: var(--espaco-sm);
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: var(--cor-destaque);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: var(--peso-medio);
+    letter-spacing: 0.03em;
+}
+
+.cartao-nivel-cadeado {
+    position: absolute;
+    top: var(--espaco-md);
+    right: var(--espaco-md);
+    font-size: 0.9rem;
+}
+
+/* Badge de dificuldade — usado nos cartões de tarefa */
+.badge-dificuldade {
+    font-size: 0.7rem;
+    font-weight: var(--peso-medio);
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    border: 1px solid var(--cor-borda);
+}
+
+.badge-dificuldade.facil { color: #3fb96a; border-color: #3fb96a44; background: #3fb96a1a; }
+.badge-dificuldade.medio { color: #e0b53f; border-color: #e0b53f44; background: #e0b53f1a; }
+.badge-dificuldade.dificil { color: #e0523f; border-color: #e0523f44; background: #e0523f1a; }
+
+/* Toast de "+XP ganho" — flutua no canto inferior da tela em qualquer página */
+.toast-xp {
+    position: fixed;
+    bottom: calc(var(--espaco-lg) + 16px);
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    z-index: 999;
+    padding: 0.7rem 1.1rem;
+    border-radius: var(--raio-md);
+    background: var(--cor-fundo);
+    border: 1px solid var(--cor-destaque);
+    box-shadow: 0 12px 32px -12px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 0.3s var(--curva-suave), transform 0.3s var(--curva-suave);
+    pointer-events: none;
+}
+
+.toast-xp.visivel {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast-xp-linha {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--fonte-mono);
+    font-weight: var(--peso-medio);
+    color: var(--texto-principal);
+    white-space: nowrap;
+}
+
+.toast-xp-icone {
+    color: var(--cor-destaque);
+}
+
+.toast-xp-levelup {
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--cor-destaque);
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .toast-xp {
+        left: var(--espaco-md);
+        right: var(--espaco-md);
+        transform: translateY(16px);
+        text-align: center;
+    }
+    .toast-xp.visivel {
+        transform: translateY(0);
+    }
+}

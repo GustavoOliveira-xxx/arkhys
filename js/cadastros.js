@@ -1,5 +1,6 @@
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica } from './midia.js';
+import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica, sanitizarNomeArquivo } from './midia.js';
+import { ganharXp, XP_ACOES } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -201,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const arquivo = campoImagem.files[0];
             if (arquivo) {
                 const caminhoAntigo = itemEditando?.[campoImagem.dataset.key] || null;
-                const novoCaminho = `${user.id}/materias/${Date.now()}_${arquivo.name}`;
+                const novoCaminho = `${user.id}/materias/${Date.now()}_${sanitizarNomeArquivo(arquivo.name)}`;
                 const { error: erroUpload } = await enviarMidiaPublica(novoCaminho, arquivo);
                 if (erroUpload) {
                     alert('Erro ao enviar ícone: ' + erroUpload.message);
@@ -219,7 +220,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (itemEditando) {
             ({ error } = await supabase.from(configAbas[abaAtual].tabela).update(payload).eq('id', itemEditando.id));
         } else {
-            ({ error } = await supabase.from(configAbas[abaAtual].tabela).insert(payload));
+            const resposta = await supabase.from(configAbas[abaAtual].tabela).insert(payload).select().single();
+            error = resposta.error;
+            if (!error) {
+                await ganharXp(user.id, XP_ACOES.NOVO_CADASTRO, `Novo cadastro (${configAbas[abaAtual].titulo})`, `cadastro-${configAbas[abaAtual].tabela}-${resposta.data.id}`);
+            }
         }
 
         botaoSalvar.disabled = false;

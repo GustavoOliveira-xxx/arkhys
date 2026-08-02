@@ -6,11 +6,12 @@
 // sempre visível e gerenciável a partir do Cofre.
 // ==================================================
 import { supabase } from './supabase-config.js';
+import { sanitizarNomeArquivo } from './midia.js';
 
 // Envia um arquivo para o bucket privado "arquivos" e registra a
 // referência na tabela `arquivos`, para aparecer no Cofre.
 export async function enviarERegistrarArquivo({ usuarioId, arquivo, pasta = '', categoria = 'Geral', referenciaTarefaId = null }) {
-    const caminho = `${usuarioId}/${pasta ? pasta + '/' : ''}${Date.now()}_${arquivo.name}`;
+    const caminho = `${usuarioId}/${pasta ? pasta + '/' : ''}${Date.now()}_${sanitizarNomeArquivo(arquivo.name)}`;
 
     const { error: erroUpload } = await supabase.storage.from('arquivos').upload(caminho, arquivo);
     if (erroUpload) return { error: erroUpload };

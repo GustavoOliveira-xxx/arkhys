@@ -26,10 +26,6 @@
                     <span class="nav-icone">🏠</span>
                     <span>Início</span>
                 </a>
-                <a href="hoje.html" class="nav-item">
-                    <span class="nav-icone">📅</span>
-                    <span>Hoje</span>
-                </a>
                 <a href="tarefas.html" class="nav-item ativo">
                     <span class="nav-icone">📋</span>
                     <span>Tarefas</span>
@@ -41,6 +37,10 @@
                 <a href="calendario.html" class="nav-item">
                     <span class="nav-icone">🗓️</span>
                     <span>Calendário</span>
+                </a>
+                <a href="xp.html" class="nav-item">
+                    <span class="nav-icone">⭐</span>
+                    <span>XP</span>
                 </a>
                 <a href="arquivos.html" class="nav-item">
                     <span class="nav-icone">📁</span>
@@ -109,6 +109,15 @@
                 <div class="grupo-campo">
                     <label for="data_entrega">DATA DE ENTREGA</label>
                     <input type="date" id="data_entrega" class="campo-entrada" required>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="dificuldade">DIFICULDADE <span class="metadado">(define o XP ganho ao concluir)</span></label>
+                    <select id="dificuldade" class="campo-entrada">
+                        <option value="facil">🟢 Fácil — +15 XP</option>
+                        <option value="medio" selected>🟡 Médio — +30 XP</option>
+                        <option value="dificil">🔴 Difícil — +60 XP</option>
+                    </select>
                 </div>
 
                 <div class="grupo-campo">

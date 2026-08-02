@@ -1,6 +1,7 @@
 import { supabase } from './supabase-config.js';
 import { sairDaConta } from './auth.js';
-import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica } from './midia.js';
+import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica, sanitizarNomeArquivo } from './midia.js';
+import { carregarNiveis, calcularNivel } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +51,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (perfil) {
-        document.getElementById('nivelPerfil').textContent = `Nível ${perfil.nivel_atual}`;
+        const niveis = await carregarNiveis();
+        const nomeNivel = calcularNivel(perfil.xp_total, niveis).nome_titulo;
+        document.getElementById('nivelPerfil').textContent = `Nível ${perfil.nivel_atual} — ${nomeNivel}`;
         document.getElementById('xpPerfil').textContent = `${perfil.xp_total} XP acumulado`;
         renderizarAvatar();
     }
@@ -68,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnAlterarFoto.textContent = 'Enviando...';
 
         const caminhoAntigo = perfil?.foto_url || null;
-        const novoCaminho = `${user.id}/avatar/${Date.now()}_${arquivo.name}`;
+        const novoCaminho = `${user.id}/avatar/${Date.now()}_${sanitizarNomeArquivo(arquivo.name)}`;
 
         const { error: erroUpload } = await enviarMidiaPublica(novoCaminho, arquivo);
         if (erroUpload) {
