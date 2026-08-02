@@ -2018,3 +2018,155 @@ body.tela-acesso {
 @media (max-width: 600px) {
     .card-nivel-atual { flex-direction: column; text-align: center; }
 }
+/* ==========================================================================
+   ABAS DE TAREFAS (Pendentes / Concluídas) — Tarefas
+   ========================================================================== */
+.abas-tarefas {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--espaco-sm);
+    overflow-x: auto;
+}
+.aba-tarefa {
+    flex-shrink: 0;
+    padding: 0.55rem 1.1rem;
+    border-radius: var(--raio-md, 10px);
+    border: 1px solid var(--cor-borda);
+    background: var(--cor-superficie);
+    color: var(--texto-secundario);
+    font-family: var(--fonte-base);
+    font-size: 0.85rem;
+    font-weight: var(--peso-medio);
+    cursor: pointer;
+    transition: 0.2s;
+}
+.aba-tarefa:hover { color: var(--texto-principal); border-color: var(--cor-borda-clara); }
+.aba-tarefa.ativa {
+    background: var(--cor-destaque-fraco);
+    border-color: var(--cor-destaque);
+    color: var(--texto-principal);
+}
+
+/* ==========================================================================
+   MÚLTIPLOS ANEXOS — lista no formulário de tarefa
+   ========================================================================== */
+.lista-anexos-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+.item-anexo-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0.5rem 0.75rem;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md, 10px);
+    font-size: 0.85rem;
+    color: var(--texto-principal);
+}
+.item-anexo-form span { overflow-wrap: anywhere; }
+.item-anexo-novo em { color: var(--texto-terciario); font-style: normal; font-size: 0.78rem; }
+.btn-remover-anexo {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--texto-terciario);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+.btn-remover-anexo:hover { color: var(--cor-destaque); background: var(--cor-destaque-fraquissimo); }
+
+/* ==========================================================================
+   MÚLTIPLOS ANEXOS — galeria no modal "Saiba mais" e no Cofre
+   ========================================================================== */
+.grade-anexos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+.detalhe-anexo-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md, 10px);
+    overflow: hidden;
+    cursor: pointer;
+    transition: 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+.detalhe-anexo-card:hover { border-color: var(--cor-destaque); transform: translateY(-2px); }
+.detalhe-anexo-card img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    display: block;
+    background: var(--cor-fundo);
+}
+.detalhe-anexo-card-icone {
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    background: var(--cor-fundo);
+}
+.detalhe-anexo-card-legenda {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+    color: var(--texto-secundario);
+    overflow-wrap: anywhere;
+}
+.detalhe-anexo-pdf-card .detalhe-anexo-card-icone { color: var(--cor-destaque); }
+
+/* ==========================================================================
+   OVERLAY GLOBAL DE CARREGAMENTO — todas as páginas
+   ========================================================================== */
+.loading-global-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cor-fundo);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.loading-global-overlay.visivel {
+    opacity: 1;
+    pointer-events: all;
+}
+.loading-global-caixa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--espaco-sm);
+}
+.loading-global-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    animation: pulsar-logo-arkhys 1.4s ease-in-out infinite;
+}
+.loading-global-texto {
+    font-family: var(--fonte-mono);
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--texto-secundario);
+}
+@keyframes pulsar-logo-arkhys {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.88); opacity: 0.65; }
+}

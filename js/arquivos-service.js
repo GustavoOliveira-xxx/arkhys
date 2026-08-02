@@ -69,3 +69,55 @@ export async function vincularArquivoATarefa(caminho, tarefaId) {
     if (!caminho || !tarefaId) return;
     await supabase.from('arquivos').update({ referencia_tarefa_id: tarefaId }).eq('url_arquivo', caminho);
 }
+
+// ==================================================
+// MÚLTIPLOS ANEXOS POR TAREFA
+// A tabela `arquivos` já vincula vários registros à mesma tarefa via
+// referencia_tarefa_id (relação 1-para-muitos), então não precisa de
+// nenhuma mudança de schema — só de funções que busquem todos os
+// anexos de uma tarefa (ou de várias, em lote).
+// ==================================================
+
+// Lista todos os anexos de UMA tarefa (usado no modal "Saiba mais",
+// na impressão e na edição do formulário).
+export async function listarAnexosDaTarefa(tarefaId) {
+    if (!tarefaId) return [];
+    const { data, error } = await supabase
+        .from('arquivos')
+        .select('*')
+        .eq('referencia_tarefa_id', tarefaId)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Erro ao listar anexos da tarefa:', error.message);
+        return [];
+    }
+    return data || [];
+}
+
+// Busca os anexos de VÁRIAS tarefas de uma vez (uma consulta só),
+// devolvendo um mapa { tarefaId: [anexos] } — usado pra montar os
+// badges de anexo na lista de tarefas sem fazer uma chamada por item.
+export async function mapaAnexosPorTarefa(tarefaIds = []) {
+    const unicos = [...new Set(tarefaIds.filter(Boolean))];
+    const mapa = {};
+    if (unicos.length === 0) return mapa;
+
+    const { data, error } = await supabase
+        .from('arquivos')
+        .select('*')
+        .in('referencia_tarefa_id', unicos)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Erro ao buscar anexos em lote:', error.message);
+        return mapa;
+    }
+
+    (data || []).forEach(anexo => {
+        const chave = anexo.referencia_tarefa_id;
+        if (!mapa[chave]) mapa[chave] = [];
+        mapa[chave].push(anexo);
+    });
+    return mapa;
+}

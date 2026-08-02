@@ -1,8 +1,9 @@
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
-import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
+import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
+import { enviarERegistrarArquivo, removerArquivoPorCaminho, listarAnexosDaTarefa, mapaAnexosPorTarefa } from './arquivos-service.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
-import { concederXp, concederXpDiaPerfeito, XP_POR_DIFICULDADE, NOME_DIFICULDADE } from './xp-service.js';
+import { concederXpDiaPerfeito, concederXpConclusaoTarefa, NOME_DIFICULDADE } from './xp-service.js';
+import { mostrarCarregamento, esconderCarregamento } from './loading.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se está logado
@@ -14,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Elementos
     const lista = document.getElementById('listaTarefas');
-    const filtroStatus = document.getElementById('filtroStatus');
+    const abasTarefas = document.getElementById('abasTarefas');
     const filtroMateria = document.getElementById('filtroMateria');
     const btnNovaTarefa = document.getElementById('btnNovaTarefa');
     const modal = document.getElementById('modalTarefa');
@@ -33,14 +34,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Elementos — ferramentas
     const listaFerramentas = document.getElementById('listaFerramentas');
 
-    // Elementos — anexo
+    // Elementos — anexos (múltiplos)
     const inputAnexo = document.getElementById('anexo');
-    const anexoAtual = document.getElementById('anexoAtual');
+    const listaAnexosForm = document.getElementById('listaAnexosForm');
 
     let tarefas = [];
     let materias = [];
     let membros = [];
     let ferramentas = [];
+    let anexosMap = {};        // { tarefaId: [anexos] } — carregado em lote junto com as tarefas
+    let abaAtiva = 'pendentes'; // 'pendentes' | 'concluidas'
+
+    // Estado do formulário de anexos (múltiplos, até salvar)
+    let anexosExistentes = [];         // anexos já salvos no banco (ao editar)
+    let anexosNovos = [];              // arquivos novos escolhidos/colados, ainda não enviados
+    let anexosParaRemover = new Set(); // ids de anexosExistentes marcados pra remoção ao salvar
 
     // ==================================================
     // CARREGAR MATÉRIAS (para os selects de filtro e modal)
@@ -173,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         tarefas = data || [];
+        anexosMap = await mapaAnexosPorTarefa(tarefas.map(t => t.id));
         renderizarLista();
         abrirEdicaoViaLink();
     }
@@ -198,11 +207,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return '📝';
     }
 
-    // Pequeno indicativo do tipo de mídia anexada, junto da linha de detalhes
+    // Pequeno indicativo do(s) anexo(s), junto da linha de detalhes
     function badgeAnexo(tarefa) {
-        if (!tarefa.anexo_path) return '';
-        const nome = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
-        return ` • ${iconePorTipo(nome, tarefa.anexo_tipo)} ${rotuloPorTipo(nome, tarefa.anexo_tipo)}`;
+        const anexos = anexosMap[tarefa.id] || [];
+        if (anexos.length === 0) return '';
+        if (anexos.length === 1) {
+            const nome = anexos[0].nome_arquivo;
+            return ` • ${iconePorTipo(nome)} ${rotuloPorTipo(nome)}`;
+        }
+        return ` • 📎 ${anexos.length} anexos`;
     }
 
     const EMOJI_DIFICULDADE = { facil: '🟢', medio: '🟡', dificil: '🔴' };
@@ -217,8 +230,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderizarLista() {
         let visiveis = [...tarefas];
 
-        if (filtroStatus.value === 'pendentes') visiveis = visiveis.filter(t => !t.concluida);
-        if (filtroStatus.value === 'concluidas') visiveis = visiveis.filter(t => t.concluida);
+        visiveis = abaAtiva === 'concluidas'
+            ? visiveis.filter(t => t.concluida)
+            : visiveis.filter(t => !t.concluida);
 
         if (filtroMateria.value) {
             visiveis = visiveis.filter(t => String(t.materia_id) === filtroMateria.value);
@@ -255,8 +269,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
     }
 
+    // Abas (Pendentes / Concluídas)
+    abasTarefas.addEventListener('click', (e) => {
+        const aba = e.target.closest('.aba-tarefa');
+        if (!aba) return;
+        abasTarefas.querySelectorAll('.aba-tarefa').forEach(el => el.classList.remove('ativa'));
+        aba.classList.add('ativa');
+        abaAtiva = aba.dataset.status;
+        renderizarLista();
+    });
+
     // Filtros
-    filtroStatus.addEventListener('change', renderizarLista);
     filtroMateria.addEventListener('change', renderizarLista);
 
     // ==================================================
@@ -268,10 +291,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         secaoGrupo.hidden = true;
         listaCamposMembros.innerHTML = '';
         renderizarFerramentas();
-        anexoAtual.innerHTML = '';
-        anexoAtual.dataset.caminho = '';
-        anexoAtual.dataset.remover = '';
+        anexosExistentes = [];
+        anexosNovos = [];
+        anexosParaRemover = new Set();
+        renderizarAnexosForm();
     }
+
+    // ==================================================
+    // LISTA DE ANEXOS DO FORMULÁRIO (múltiplos) — mostra os já
+    // salvos (com opção de remover) e os novos ainda não enviados.
+    // ==================================================
+    function renderizarAnexosForm() {
+        const existentesVisiveis = anexosExistentes.filter(a => !anexosParaRemover.has(a.id));
+
+        const blocosExistentes = existentesVisiveis.map(a => `
+            <div class="item-anexo-form">
+                <span>${iconePorTipo(a.nome_arquivo)} ${a.nome_arquivo}</span>
+                <button type="button" class="btn-remover-anexo" data-acao="remover-existente" data-id="${a.id}" title="Remover">✕</button>
+            </div>
+        `);
+
+        const blocosNovos = anexosNovos.map((arquivo, indice) => `
+            <div class="item-anexo-form item-anexo-novo">
+                <span>📎 ${arquivo.name} <em>(novo)</em></span>
+                <button type="button" class="btn-remover-anexo" data-acao="remover-novo" data-indice="${indice}" title="Remover">✕</button>
+            </div>
+        `);
+
+        const blocos = [...blocosExistentes, ...blocosNovos].join('');
+        listaAnexosForm.innerHTML = blocos || '<p class="metadado">Nenhum anexo ainda.</p>';
+    }
+
+    listaAnexosForm.addEventListener('click', (e) => {
+        const botao = e.target.closest('.btn-remover-anexo');
+        if (!botao) return;
+
+        if (botao.dataset.acao === 'remover-existente') {
+            anexosParaRemover.add(Number(botao.dataset.id));
+        } else if (botao.dataset.acao === 'remover-novo') {
+            anexosNovos.splice(Number(botao.dataset.indice), 1);
+        }
+        renderizarAnexosForm();
+    });
 
     btnNovaTarefa.addEventListener('click', () => {
         resetarFormulario();
@@ -285,56 +346,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target === modal) modal.hidden = true;
     });
 
+    // Seleção de arquivo(s) pelo input — acumula na lista de novos anexos
+    // (não substitui os já escolhidos, permite ir adicionando aos poucos)
+    inputAnexo.addEventListener('change', () => {
+        anexosNovos.push(...Array.from(inputAnexo.files));
+        inputAnexo.value = '';
+        renderizarAnexosForm();
+    });
+
     // ==================================================
-    // COLAR IMAGEM DA ÁREA DE TRANSFERÊNCIA (Ctrl+V)
+    // COLAR IMAGEM(NS) DA ÁREA DE TRANSFERÊNCIA (Ctrl+V)
     // Funciona em qualquer campo do formulário — captura o evento
-    // de paste, pega a imagem do clipboard e coloca no input de anexo.
+    // de paste e adiciona cada imagem colada à lista de novos anexos.
+    // Pode ser usado várias vezes em sequência para colar mais de uma.
     // ==================================================
     modal.addEventListener('paste', (e) => {
         const itens = e.clipboardData?.items;
         if (!itens) return;
 
-        const itemImagem = Array.from(itens).find(item => item.type.startsWith('image/'));
-        if (!itemImagem) return;
-
-        const arquivo = itemImagem.getAsFile();
-        if (!arquivo) return;
+        const itensImagem = Array.from(itens).filter(item => item.type.startsWith('image/'));
+        if (itensImagem.length === 0) return;
 
         e.preventDefault();
 
-        const extensao = (itemImagem.type.split('/')[1] || 'png').toLowerCase();
-        const arquivoRenomeado = new File([arquivo], `imagem-colada-${Date.now()}.${extensao}`, { type: itemImagem.type });
+        itensImagem.forEach((item, indice) => {
+            const arquivo = item.getAsFile();
+            if (!arquivo) return;
+            const extensao = (item.type.split('/')[1] || 'png').toLowerCase();
+            const arquivoRenomeado = new File([arquivo], `imagem-colada-${Date.now()}-${indice}.${extensao}`, { type: item.type });
+            anexosNovos.push(arquivoRenomeado);
+        });
 
-        const transferenciaDados = new DataTransfer();
-        transferenciaDados.items.add(arquivoRenomeado);
-        inputAnexo.files = transferenciaDados.files;
-
-        // Se havia um anexo anterior marcado, cancela a marcação de remoção
-        // (o novo arquivo colado vai substituí-lo ao salvar)
-        anexoAtual.dataset.remover = '';
-        anexoAtual.innerHTML = `📎 Imagem colada pronta para enviar: ${arquivoRenomeado.name}`;
-    });
-
-    // Abrir o anexo atual (link exibido durante a edição) e remover anexo
-    anexoAtual.addEventListener('click', async (e) => {
-        if (e.target.id === 'linkAbrirAnexo') {
-            e.preventDefault();
-            const caminho = anexoAtual.dataset.caminho;
-            if (!caminho) return;
-
-            const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 30);
-            if (error) {
-                alert('Erro ao abrir anexo: ' + error.message);
-                return;
-            }
-            window.open(data.signedUrl, '_blank');
-        }
-
-        if (e.target.id === 'linkRemoverAnexo') {
-            e.preventDefault();
-            anexoAtual.dataset.remover = '1';
-            anexoAtual.innerHTML = '<p class="metadado">Anexo será removido ao salvar.</p>';
-        }
+        renderizarAnexosForm();
     });
 
     // ==================================================
@@ -365,17 +408,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Ferramentas
         renderizarFerramentas(tarefa.ferramentas_ids || []);
 
-        // Anexo
+        // Anexos (múltiplos) — parte do mapa já carregado em lote
         inputAnexo.value = '';
-        anexoAtual.dataset.remover = '';
-        if (tarefa.anexo_path) {
-            const nomeArquivo = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
-            anexoAtual.innerHTML = `📎 Anexo atual: ${nomeArquivo} — <a href="#" id="linkAbrirAnexo">abrir</a> · <a href="#" id="linkRemoverAnexo" class="link-remover">remover</a>`;
-            anexoAtual.dataset.caminho = tarefa.anexo_path;
-        } else {
-            anexoAtual.innerHTML = '';
-            anexoAtual.dataset.caminho = '';
-        }
+        anexosExistentes = anexosMap[tarefa.id] || [];
+        anexosNovos = [];
+        anexosParaRemover = new Set();
+        renderizarAnexosForm();
 
         tituloModal.textContent = 'Editar Tarefa';
         modal.hidden = false;
@@ -396,17 +434,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Concluiu agora: concede XP (idempotente — só a primeira vez que essa
-        // tarefa é marcada como concluída rende XP, pra evitar farm)
+        // Concluiu agora: concede XP com trava anti-farm (tempo mínimo desde
+        // a criação + limite de ritmo). Nunca concede XP ao criar/editar/anexar.
         if (novoEstado) {
-            const xpBase = XP_POR_DIFICULDADE[tarefa.dificuldade] || XP_POR_DIFICULDADE.medio;
-            await concederXp('tarefa_concluida', `tarefa:${tarefa.id}`, xpBase);
+            await concederXpConclusaoTarefa(tarefa);
 
             const hoje = new Date().toISOString().split('T')[0];
-            if (tarefa.data_entrega >= hoje) {
-                await concederXp('tarefa_no_prazo', `tarefa:${tarefa.id}`, 10);
-            }
-
             const tarefasHoje = tarefas.filter(t => t.data_entrega === hoje);
             const tarefasHojeAtualizadas = tarefasHoje.map(t => t.id === tarefa.id ? { ...t, concluida: true } : t);
             await concederXpDiaPerfeito(hoje, tarefasHojeAtualizadas);
@@ -421,8 +454,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function excluirTarefa(tarefa) {
         if (!confirm('Excluir essa tarefa permanentemente?')) return;
 
-        if (tarefa.anexo_path) {
-            await removerArquivoPorCaminho(user.id, tarefa.anexo_path);
+        const anexos = anexosMap[tarefa.id] || await listarAnexosDaTarefa(tarefa.id);
+        for (const anexo of anexos) {
+            await removerArquivoPorCaminho(user.id, anexo.url_arquivo);
         }
 
         const { error } = await supabase.from('tarefas').delete().eq('id', tarefa.id);
@@ -523,6 +557,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const botaoSalvar = form.querySelector('.acoes-form button[type="submit"]');
         botaoSalvar.disabled = true;
+        mostrarCarregamento('Salvando tarefa...');
 
         let error;
         let tarefaId = idAtual ? Number(idAtual) : null;
@@ -539,43 +574,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) {
             alert('Erro ao salvar: ' + error.message);
             botaoSalvar.disabled = false;
+            esconderCarregamento();
             return;
         }
 
-        // Trata o anexo separadamente, agora que já temos o ID da tarefa
-        const arquivoSelecionado = inputAnexo.files[0];
-        const caminhoAnexoAnterior = anexoAtual.dataset.caminho || null;
-        const removerSolicitado = anexoAtual.dataset.remover === '1';
+        // Trata os anexos separadamente, agora que já temos o ID da tarefa.
+        // Anexar/remover arquivo NUNCA concede XP (só concluir a tarefa concede).
+        for (const idRemover of anexosParaRemover) {
+            const anexo = anexosExistentes.find(a => a.id === idRemover);
+            if (anexo) await removerArquivoPorCaminho(user.id, anexo.url_arquivo);
+        }
 
-        if (arquivoSelecionado) {
-            if (caminhoAnexoAnterior) {
-                await removerArquivoPorCaminho(user.id, caminhoAnexoAnterior);
-            }
-
-            const { data, error: erroAnexo } = await enviarERegistrarArquivo({
+        for (const arquivo of anexosNovos) {
+            const { error: erroAnexo } = await enviarERegistrarArquivo({
                 usuarioId: user.id,
-                arquivo: arquivoSelecionado,
+                arquivo,
                 pasta: 'tarefas',
                 categoria: 'Tarefa',
                 referenciaTarefaId: tarefaId
             });
-
             if (erroAnexo) {
-                alert('A tarefa foi salva, mas houve um erro ao enviar o anexo: ' + erroAnexo.message);
-            } else {
-                await supabase.from('tarefas').update({
-                    anexo_path: data.caminho,
-                    anexo_nome: arquivoSelecionado.name,
-                    anexo_tipo: arquivoSelecionado.type || null
-                }).eq('id', tarefaId);
-                await concederXp('anexo_tarefa', `tarefa:${tarefaId}`, 5);
+                alert(`A tarefa foi salva, mas houve um erro ao enviar "${arquivo.name}": ${erroAnexo.message}`);
             }
-        } else if (removerSolicitado && caminhoAnexoAnterior) {
-            await removerArquivoPorCaminho(user.id, caminhoAnexoAnterior);
-            await supabase.from('tarefas').update({ anexo_path: null, anexo_nome: null, anexo_tipo: null }).eq('id', tarefaId);
         }
 
         botaoSalvar.disabled = false;
+        esconderCarregamento();
         modal.hidden = true;
         resetarFormulario();
         carregarTarefas();

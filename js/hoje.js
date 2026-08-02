@@ -1,6 +1,7 @@
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
+import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
+import { mapaAnexosPorTarefa } from './arquivos-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se está logado
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let tarefasDoDia = [];
     let materias = [];
+    let anexosMap = {};
 
     async function carregarMaterias() {
         const { data } = await supabase.from('materias').select('*').eq('usuario_id', user.id);
@@ -43,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         tarefasDoDia = tarefas || [];
+        anexosMap = await mapaAnexosPorTarefa(tarefasDoDia.map(t => t.id));
         renderizarLista(tarefasDoDia);
         renderizarTempoTotal(tarefasDoDia);
     }
@@ -56,9 +59,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function badgeAnexo(tarefa) {
-        if (!tarefa.anexo_path) return '';
-        const nome = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
-        return ` • ${iconePorTipo(nome, tarefa.anexo_tipo)} ${rotuloPorTipo(nome, tarefa.anexo_tipo)}`;
+        const anexos = anexosMap[tarefa.id] || [];
+        if (anexos.length === 0) return '';
+        if (anexos.length === 1) {
+            const nome = anexos[0].nome_arquivo;
+            return ` • ${iconePorTipo(nome)} ${rotuloPorTipo(nome)}`;
+        }
+        return ` • 📎 ${anexos.length} anexos`;
     }
 
     // ==================================================

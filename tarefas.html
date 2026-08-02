@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style-global.css">
 
+    <script type="module" src="js/loading.js"></script>
     <script type="module" src="js/supabase-config.js"></script>
 </head>
 <body>
@@ -64,13 +65,12 @@
             <button type="button" id="btnNovaTarefa" class="botao botao-primario">+ Nova Tarefa</button>
         </header>
 
-        <div class="area-filtros">
-            <select id="filtroStatus" class="campo-entrada">
-                <option value="">Todos os status</option>
-                <option value="pendentes">Pendentes</option>
-                <option value="concluidas">Concluídas</option>
-            </select>
+        <div class="abas-tarefas" id="abasTarefas" role="tablist">
+            <button type="button" class="aba-tarefa ativa" data-status="pendentes">📋 Pendentes</button>
+            <button type="button" class="aba-tarefa" data-status="concluidas">✅ Concluídas</button>
+        </div>
 
+        <div class="area-filtros">
             <select id="filtroMateria" class="campo-entrada">
                 <option value="">Todas as matérias</option>
             </select>
@@ -146,10 +146,10 @@
                 </div>
 
                 <div class="grupo-campo">
-                    <label for="anexo">FOTO OU DOCUMENTO BASE (OPCIONAL)</label>
-                    <input type="file" id="anexo" class="campo-entrada" accept="image/*,.pdf,.doc,.docx">
-                    <p class="metadado dica-colar">📋 Dica: você também pode colar uma imagem da área de transferência (Ctrl+V) em qualquer lugar deste formulário.</p>
-                    <p id="anexoAtual" class="metadado"></p>
+                    <label for="anexo">FOTOS OU DOCUMENTOS (OPCIONAL)</label>
+                    <input type="file" id="anexo" class="campo-entrada" accept="image/*,.pdf,.doc,.docx" multiple>
+                    <p class="metadado dica-colar">📋 Dica: você também pode colar uma ou várias imagens da área de transferência (Ctrl+V) em qualquer lugar deste formulário.</p>
+                    <div id="listaAnexosForm" class="lista-anexos-form"></div>
                 </div>
 
                 <div class="acoes-form">

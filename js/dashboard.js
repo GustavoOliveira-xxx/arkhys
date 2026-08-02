@@ -1,7 +1,8 @@
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
+import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
-import { concederXpDoDia, concederXpDiaPerfeito, buscarNiveis, calcularProgresso, concederXp, XP_POR_DIFICULDADE } from './xp-service.js';
+import { mapaAnexosPorTarefa } from './arquivos-service.js';
+import { concederXpDoDia, concederXpDiaPerfeito, concederXpConclusaoTarefa, buscarNiveis, calcularProgresso } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Pegar dados do usuário logado
@@ -36,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         .from('materias')
         .select('*')
         .eq('usuario_id', user.id);
+
+    // Anexos de todas as tarefas exibidas, buscados em lote (evita 1 chamada por item)
+    const anexosMap = await mapaAnexosPorTarefa(tarefas.map(t => t.id));
 
     // Separar contadores
     const pendentes = tarefas.length;
@@ -95,9 +99,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function badgeAnexo(tarefa) {
-        if (!tarefa.anexo_path) return '';
-        const nome = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
-        return ` • ${iconePorTipo(nome, tarefa.anexo_tipo)} ${rotuloPorTipo(nome, tarefa.anexo_tipo)}`;
+        const anexos = anexosMap[tarefa.id] || [];
+        if (anexos.length === 0) return '';
+        if (anexos.length === 1) {
+            const nome = anexos[0].nome_arquivo;
+            return ` • ${iconePorTipo(nome)} ${rotuloPorTipo(nome)}`;
+        }
+        return ` • 📎 ${anexos.length} anexos`;
     }
 
     function abrirDetalhes(tarefa) {
@@ -114,9 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) { alert('Erro ao atualizar: ' + error.message); return; }
 
         if (novoEstado) {
-            const xpBase = XP_POR_DIFICULDADE[tarefa.dificuldade] || XP_POR_DIFICULDADE.medio;
-            await concederXp('tarefa_concluida', `tarefa:${tarefa.id}`, xpBase);
-            if (tarefa.data_entrega >= hoje) await concederXp('tarefa_no_prazo', `tarefa:${tarefa.id}`, 10);
+            await concederXpConclusaoTarefa(tarefa);
 
             const tarefasHojeAtualizadas = tarefas.filter(t => t.data_entrega === hoje).map(t => t.id === tarefa.id ? { ...t, concluida: true } : t);
             await concederXpDiaPerfeito(hoje, tarefasHojeAtualizadas);

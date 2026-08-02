@@ -4,7 +4,8 @@
 // existe um elemento fixo no HTML de cada página).
 // ==================================================
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, nomeExibicao, extensaoDoArquivo, abrirLightboxImagem } from './midia.js';
+import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
+import { listarAnexosDaTarefa } from './arquivos-service.js';
 
 let overlayAtual = null;
 
@@ -33,46 +34,39 @@ function calcularStatus(tarefa) {
 const EMOJI_DIFICULDADE = { facil: '🟢', medio: '🟡', dificil: '🔴' };
 const NOME_DIFICULDADE_LOCAL = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' };
 
-// Monta o bloco de anexo: galeria de imagem com lightbox, visualizador de
-// PDF embutido (não obriga baixar, mas sempre dá a opção), ou cartão com
-// ícone + link para os demais tipos de arquivo.
-async function montarBlocoAnexo(tarefa) {
-    if (!tarefa.anexo_path) return '';
+// Monta a GALERIA de anexos (pode ter quantos anexos a tarefa tiver):
+// imagens em miniatura, cartão de PDF, ou cartão com ícone pros demais
+// tipos — cada cartão abre o visualizador certo (mesma experiência do
+// Cofre de Arquivos) ao ser clicado.
+async function montarGaleriaAnexos(anexos) {
+    if (!anexos.length) return '';
 
-    const nomeArquivo = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
-    const { data } = await supabase.storage.from('arquivos').createSignedUrl(tarefa.anexo_path, 60 * 30);
-    const url = data?.signedUrl;
+    const urls = await urlsAssinadasEmLote(anexos.map(a => a.url_arquivo));
 
-    if (!url) return '<p class="metadado">Não foi possível carregar o anexo.</p>';
+    return anexos.map(anexo => {
+        const nomeArquivo = anexo.nome_arquivo;
+        const url = urls[anexo.url_arquivo];
+        if (!url) return '';
 
-    if (ehImagem(nomeArquivo, tarefa.anexo_tipo)) {
-        return `<div class="detalhe-anexo-galeria">
-            <img src="${url}" alt="${nomeArquivo}" data-acao="ampliar" data-url="${url}">
-            <div class="detalhe-anexo-legenda">
-                <span>🖼️ ${nomeArquivo}</span>
-                <a href="${url}" download="${nomeArquivo}" title="Baixar">⬇️ Baixar</a>
-            </div>
+        if (ehImagem(nomeArquivo)) {
+            return `<div class="detalhe-anexo-card" data-acao="ver-anexo" data-url="${url}" data-nome="${nomeArquivo}">
+                <img src="${url}" alt="${nomeArquivo}" loading="lazy">
+                <div class="detalhe-anexo-card-legenda">🖼️ ${nomeArquivo}</div>
+            </div>`;
+        }
+
+        if (extensaoDoArquivo(nomeArquivo) === 'pdf') {
+            return `<div class="detalhe-anexo-card detalhe-anexo-pdf-card" data-acao="ver-anexo" data-url="${url}" data-nome="${nomeArquivo}">
+                <div class="detalhe-anexo-card-icone">📕</div>
+                <div class="detalhe-anexo-card-legenda">${nomeArquivo}</div>
+            </div>`;
+        }
+
+        return `<div class="detalhe-anexo-card" data-acao="ver-anexo" data-url="${url}" data-nome="${nomeArquivo}">
+            <div class="detalhe-anexo-card-icone">${iconePorTipo(nomeArquivo)}</div>
+            <div class="detalhe-anexo-card-legenda">${rotuloPorTipo(nomeArquivo)} — ${nomeArquivo}</div>
         </div>`;
-    }
-
-    if (extensaoDoArquivo(nomeArquivo) === 'pdf') {
-        return `<div class="detalhe-anexo-pdf">
-            <iframe src="${url}#toolbar=1" title="${nomeArquivo}" loading="lazy"></iframe>
-            <div class="detalhe-anexo-legenda">
-                <span>📕 ${nomeArquivo}</span>
-                <div>
-                    <a href="${url}" target="_blank" rel="noopener">Abrir em nova aba</a>
-                    <a href="${url}" download="${nomeArquivo}" title="Baixar">⬇️ Baixar</a>
-                </div>
-            </div>
-        </div>`;
-    }
-
-    return `<a class="detalhe-anexo-arquivo" href="${url}" download="${nomeArquivo}">
-        <span class="detalhe-anexo-icone">${iconePorTipo(nomeArquivo, tarefa.anexo_tipo)}</span>
-        <span>${rotuloPorTipo(nomeArquivo, tarefa.anexo_tipo)} — ${nomeArquivo}</span>
-        <span class="detalhe-anexo-baixar">⬇️ Baixar</span>
-    </a>`;
+    }).join('');
 }
 
 // Monta a linha de membros como LISTA (não mais texto separado por vírgula)
@@ -177,9 +171,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                 ${montarLinhaFerramentas(tarefa, ferramentas)}
             </div>
 
-            <div class="detalhe-secao" data-secao="anexo" ${tarefa.anexo_path ? '' : 'hidden'}>
-                <span class="detalhe-rotulo">Anexo</span>
-                <div data-slot="anexo">Carregando anexo...</div>
+            <div class="detalhe-secao" data-secao="anexos">
+                <span class="detalhe-rotulo">Anexos</span>
+                <div data-slot="anexos">Carregando anexos...</div>
             </div>
 
             <div class="acoes-form">
@@ -222,15 +216,23 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
     overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas));
 
-    // Carrega o anexo de forma assíncrona (precisa de URL assinada)
-    if (tarefa.anexo_path) {
-        const slot = overlay.querySelector('[data-slot="anexo"]');
-        const html = await montarBlocoAnexo(tarefa);
-        if (slot) slot.outerHTML = html || '';
+    // Carrega os anexos de forma assíncrona (precisa de URLs assinadas)
+    const secaoAnexos = overlay.querySelector('[data-secao="anexos"]');
+    const slotAnexos = overlay.querySelector('[data-slot="anexos"]');
+    const anexosTarefa = await listarAnexosDaTarefa(tarefa.id);
 
-        // Clique na imagem do anexo abre o lightbox (visualização ampliada)
-        overlay.querySelector('[data-acao="ampliar"]')?.addEventListener('click', (e) => {
-            abrirLightboxImagem(e.currentTarget.dataset.url, tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path));
+    if (anexosTarefa.length === 0) {
+        if (secaoAnexos) secaoAnexos.hidden = true;
+    } else {
+        const grade = await montarGaleriaAnexos(anexosTarefa);
+        if (slotAnexos) slotAnexos.outerHTML = `<div class="grade-anexos">${grade}</div>`;
+
+        // Clique em qualquer cartão abre o visualizador certo (mesma
+        // experiência de galeria usada no Cofre de Arquivos)
+        overlay.querySelectorAll('[data-acao="ver-anexo"]').forEach(cartao => {
+            cartao.addEventListener('click', () => {
+                abrirVisualizadorArquivo(cartao.dataset.url, cartao.dataset.nome);
+            });
         });
     }
 }
@@ -283,29 +285,33 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
     }
     janela.document.write('<p style="font-family: sans-serif; padding: 40px;">Preparando impressão...</p>');
 
-    // Busca o anexo (se houver) pra embutir no impresso — foto aparece
-    // como imagem, PDF aparece como preview embutido
+    // Busca todos os anexos da tarefa pra embutir no impresso — cada
+    // foto aparece como imagem, cada PDF aparece como preview embutido
+    const anexosTarefa = await listarAnexosDaTarefa(tarefa.id);
     let anexoHtml = '';
-    if (tarefa.anexo_path) {
-        const nomeArquivo = tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path);
-        const { data } = await supabase.storage.from('arquivos').createSignedUrl(tarefa.anexo_path, 60 * 30);
-        const url = data?.signedUrl;
+    if (anexosTarefa.length > 0) {
+        const urls = await urlsAssinadasEmLote(anexosTarefa.map(a => a.url_arquivo));
+        anexoHtml = anexosTarefa.map(anexo => {
+            const nomeArquivo = anexo.nome_arquivo;
+            const url = urls[anexo.url_arquivo];
+            if (!url) return '';
 
-        if (url && ehImagem(nomeArquivo, tarefa.anexo_tipo)) {
-            anexoHtml = `
-                <div class="anexo-impressao">
-                    <div class="rotulo">Anexo</div>
-                    <img src="${url}" alt="${nomeArquivo}">
-                </div>`;
-        } else if (url && extensaoDoArquivo(nomeArquivo) === 'pdf') {
-            anexoHtml = `
-                <div class="anexo-impressao anexo-impressao-pdf">
-                    <div class="rotulo">Anexo (PDF) — ${nomeArquivo}</div>
-                    <embed src="${url}" type="application/pdf">
-                </div>`;
-        } else if (nomeArquivo) {
-            anexoHtml = `<div class="linha"><span class="rotulo">Anexo</span><span>${nomeArquivo}</span></div>`;
-        }
+            if (ehImagem(nomeArquivo)) {
+                return `
+                    <div class="anexo-impressao">
+                        <div class="rotulo">Anexo — ${nomeArquivo}</div>
+                        <img src="${url}" alt="${nomeArquivo}">
+                    </div>`;
+            }
+            if (extensaoDoArquivo(nomeArquivo) === 'pdf') {
+                return `
+                    <div class="anexo-impressao anexo-impressao-pdf">
+                        <div class="rotulo">Anexo (PDF) — ${nomeArquivo}</div>
+                        <embed src="${url}" type="application/pdf">
+                    </div>`;
+            }
+            return `<div class="linha"><span class="rotulo">Anexo</span><span>${nomeArquivo}</span></div>`;
+        }).join('');
     }
 
     janela.document.open();
@@ -319,7 +325,7 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
                 * { box-sizing: border-box; }
                 body { font-family: 'Georgia', serif; color: #1a1a1a; max-width: 720px; margin: 40px auto; padding: 0 24px; line-height: 1.6; }
                 .cabecalho { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #c1121f; padding-bottom: 16px; margin-bottom: 24px; }
-                .cabecalho h1 { font-size: 1.1rem; letter-spacing: 2px; color: #c1121f; margin: 0; }
+                .cabecalho h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #c1121f; margin: 0; }
                 h2 { font-size: 1.6rem; margin: 0 0 4px; }
                 .status-impressao { display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; background: #eee; margin-bottom: 20px; }
                 .linha { display: flex; gap: 8px; padding: 10px 0; border-bottom: 1px solid #e5e5e5; }
