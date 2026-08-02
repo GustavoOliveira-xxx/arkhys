@@ -13,28 +13,22 @@ export function extensaoDoArquivo(nomeArquivo = '') {
     return nomeArquivo.split('.').pop().toLowerCase();
 }
 
-// ==================================================
-// SANITIZA O NOME DO ARQUIVO ANTES DE MONTAR A CHAVE DE STORAGE
-// O Supabase Storage só aceita chaves com caracteres seguros
-// (letras sem acento, números, "-", "_", "." e "/"). Nomes de
-// arquivo com espaços, acentos ou símbolos (ex: "computação em
-// nuvem - arkhys.png") geram "Invalid key" no upload. Esta função
-// remove acentos, troca espaços por "-" e elimina qualquer
-// caractere fora do conjunto seguro, preservando a extensão.
-// ==================================================
-export function sanitizarNomeArquivo(nomeArquivo = '') {
-    const partes = nomeArquivo.split('.');
+// O Supabase Storage rejeita chaves com acentos, espaços e vários
+// caracteres especiais ("Invalid key"). Esta função normaliza o nome
+// original do arquivo para algo seguro como chave, mantendo a extensão
+// e um nome ainda reconhecível (o nome "de verdade" fica salvo à parte,
+// em anexo_nome/nome_arquivo, então a exibição pro usuário não muda).
+export function nomeArquivoSeguro(nomeOriginal = 'arquivo') {
+    const partes = nomeOriginal.split('.');
     const extensao = partes.length > 1 ? partes.pop().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
     const base = partes.join('.')
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
         .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9\-_]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '');
+        .replace(/[^a-z0-9]+/g, '-')  // qualquer coisa que não seja letra/número vira "-"
+        .replace(/^-+|-+$/g, '')      // sem "-" sobrando nas pontas
+        .slice(0, 60) || 'arquivo';
 
-    const nomeBase = base || 'arquivo';
-    return extensao ? `${nomeBase}.${extensao}` : nomeBase;
+    return extensao ? `${base}.${extensao}` : base;
 }
 
 export function ehImagem(nomeArquivo = '', tipoMime = '') {

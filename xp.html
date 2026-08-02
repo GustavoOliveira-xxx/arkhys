@@ -39,7 +39,7 @@
                     <span>Calendário</span>
                 </a>
                 <a href="xp.html" class="nav-item ativo">
-                    <span class="nav-icone">⭐</span>
+                    <span class="nav-icone">🏆</span>
                     <span>XP</span>
                 </a>
                 <a href="arquivos.html" class="nav-item">
@@ -57,94 +57,46 @@
     <main class="conteudo-principal">
         <header class="cabecalho-pagina">
             <div class="cabecalho-texto">
-                <h1>Sua Jornada</h1>
-                <p>Organize, evolua, conquiste — acompanhe sua progressão</p>
+                <h1>Sua jornada</h1>
+                <p>Ganhe XP usando o Arkhys no dia a dia e suba os 15 níveis</p>
             </div>
         </header>
 
-        <!-- Resumo do nível atual -->
-        <section class="card-resumo card-xp-resumo">
-            <div class="xp-resumo-topo">
-                <div>
-                    <div class="card-titulo">Nível Atual</div>
-                    <div class="xp-nome-nivel" id="nomeNivelAtual">Carregando...</div>
+        <!-- Card do nível atual -->
+        <section class="card-nivel-atual" id="cardNivelAtual">
+            <div class="nivel-atual-selo" id="seloNivelAtual">1</div>
+            <div class="nivel-atual-info">
+                <span class="metadado">SEU NÍVEL ATUAL</span>
+                <h2 id="tituloNivelAtual">Carregando...</h2>
+                <div class="barra-xp barra-xp-grande">
+                    <div class="barra-preenchimento" id="barraXpGrande" style="width: 0%;"></div>
                 </div>
-                <div class="xp-numero-nivel" id="numeroNivelAtual">1</div>
-            </div>
-
-            <div class="barra-xp barra-xp-grande">
-                <div class="barra-preenchimento" id="barraXpGrande" style="width: 0%;"></div>
-            </div>
-
-            <div class="xp-resumo-rodape">
-                <span id="xpAtualTexto">0 XP</span>
-                <span id="xpFaltamTexto"></span>
+                <p class="metadado" id="progressoNivelTexto">—</p>
             </div>
         </section>
 
         <!-- Como ganhar XP -->
-        <section class="secao-proximas">
-            <div class="titulo-secao">
-                <span class="marca-destaque"></span>
-                Como ganhar XP
-            </div>
-            <div class="lista-itens" id="listaFormasXp">
-                <div class="item-tarefa">
-                    <div class="item-icone">✓</div>
-                    <div class="item-conteudo">
-                        <h4>Concluir tarefas</h4>
-                        <p>Fácil: +15 XP · Médio: +30 XP · Difícil: +60 XP</p>
-                    </div>
-                </div>
-                <div class="item-tarefa">
-                    <div class="item-icone">⏱️</div>
-                    <div class="item-conteudo">
-                        <h4>Concluir no prazo</h4>
-                        <p>Bônus de pontualidade: +10 XP extra</p>
-                    </div>
-                </div>
-                <div class="item-tarefa">
-                    <div class="item-icone">📝</div>
-                    <div class="item-conteudo">
-                        <h4>Criar uma nova tarefa</h4>
-                        <p>+5 XP por tarefa cadastrada</p>
-                    </div>
-                </div>
-                <div class="item-tarefa">
-                    <div class="item-icone">📎</div>
-                    <div class="item-conteudo">
-                        <h4>Anexar arquivos</h4>
-                        <p>+5 XP por anexo enviado numa tarefa</p>
-                    </div>
-                </div>
-                <div class="item-tarefa">
-                    <div class="item-icone">⚙️</div>
-                    <div class="item-conteudo">
-                        <h4>Cadastrar matérias, membros e ferramentas</h4>
-                        <p>+5 XP por novo cadastro</p>
-                    </div>
-                </div>
-                <div class="item-tarefa">
-                    <div class="item-icone">🔥</div>
-                    <div class="item-conteudo">
-                        <h4>Acessar o Arkhys todo dia</h4>
-                        <p>+10 XP no primeiro acesso do dia</p>
-                    </div>
-                </div>
+        <section class="secao-como-ganhar">
+            <h3>Como ganhar XP</h3>
+            <div class="grid-formas-xp">
+                <div class="forma-xp"><span class="forma-xp-icone">✅</span><div><strong>Concluir tarefas</strong><p>15 a 50 XP conforme a dificuldade</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">⏰</span><div><strong>Concluir no prazo</strong><p>+10 XP de bônus</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">🌟</span><div><strong>Dia perfeito</strong><p>+20 XP ao concluir tudo que vence hoje</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">📎</span><div><strong>Anexar arquivo</strong><p>+5 XP por tarefa com anexo</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">🗂️</span><div><strong>Organizar o sistema</strong><p>+8 XP por matéria, ferramenta, membro ou órgão cadastrado</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">👤</span><div><strong>Completar o perfil</strong><p>+25 XP ao colocar nome e foto</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">📁</span><div><strong>Usar o Cofre</strong><p>+5 XP por arquivo enviado</p></div></div>
+                <div class="forma-xp"><span class="forma-xp-icone">📅</span><div><strong>Abrir o Arkhys todo dia</strong><p>+5 XP de presença diária</p></div></div>
             </div>
         </section>
 
-        <!-- Os 15 níveis -->
-        <section class="secao-proximas">
-            <div class="titulo-secao">
-                <span class="marca-destaque"></span>
-                Os 15 níveis
-            </div>
-            <div class="grade-niveis" id="gradeNiveis"></div>
+        <!-- Trilha dos 15 níveis -->
+        <section class="secao-trilha-niveis">
+            <h3>Trilha de níveis</h3>
+            <div id="trilhaNiveis" class="trilha-niveis">Carregando níveis...</div>
         </section>
     </main>
 
-    <script src="js/ui.js"></script>
     <script type="module" src="js/xp.js"></script>
 </body>
 </html>

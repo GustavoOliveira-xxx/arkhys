@@ -1,5 +1,5 @@
 import { supabase } from './supabase-config.js';
-import { carregarNiveis, progressoNivel, verificarAcessoDiario } from './xp-service.js';
+import { buscarNiveis, calcularProgresso, concederXpDoDia } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -8,51 +8,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Garante que o bônus de acesso diário também seja avaliado aqui
-    // (caso o usuário entre direto nesta página).
-    await verificarAcessoDiario(user.id);
+    const hoje = new Date().toISOString().split('T')[0];
+    await concederXpDoDia(hoje);
 
-    const niveis = await carregarNiveis();
-
-    let { data: perfil } = await supabase
-        .from('perfil')
-        .select('xp_total, nivel_atual')
-        .eq('usuario_id', user.id)
-        .maybeSingle();
-
-    if (!perfil) {
-        const { data: novoPerfil } = await supabase
-            .from('perfil')
-            .insert({ usuario_id: user.id, xp_total: 0, nivel_atual: 1 })
-            .select()
-            .single();
-        perfil = novoPerfil;
-    }
+    const [{ data: perfil }, niveis] = await Promise.all([
+        supabase.from('perfil').select('xp_total, nivel_atual').eq('usuario_id', user.id).maybeSingle(),
+        buscarNiveis()
+    ]);
 
     const xpTotal = perfil?.xp_total || 0;
-    const { porcentagem, faltam, atual, proximo } = progressoNivel(xpTotal, niveis);
+    const nivelAtual = perfil?.nivel_atual || 1;
 
-    document.getElementById('nomeNivelAtual').textContent = atual.nome_titulo;
-    document.getElementById('numeroNivelAtual').textContent = atual.nivel;
-    document.getElementById('barraXpGrande').style.width = `${porcentagem}%`;
-    document.getElementById('xpAtualTexto').textContent = `${xpTotal} XP`;
-    document.getElementById('xpFaltamTexto').textContent = proximo
-        ? `Faltam ${faltam} XP para ${proximo.nome_titulo}`
-        : 'Nível máximo alcançado 🏆';
+    // ==================================================
+    // CARD DO NÍVEL ATUAL
+    // ==================================================
+    if (niveis.length) {
+        const progresso = calcularProgresso(xpTotal, niveis);
+        document.getElementById('seloNivelAtual').textContent = nivelAtual;
+        document.getElementById('tituloNivelAtual').textContent = progresso.atual?.nome_titulo || '—';
+        document.getElementById('barraXpGrande').style.width = `${progresso.porcentagem}%`;
 
-    // Desenha a grade com os 15 níveis
-    const gradeNiveis = document.getElementById('gradeNiveis');
-    gradeNiveis.innerHTML = niveis.map(n => {
-        const desbloqueado = xpTotal >= n.xp_minimo;
-        const ehAtual = n.nivel === atual.nivel;
-        const classe = ehAtual ? 'atual' : (desbloqueado ? 'desbloqueado' : 'bloqueado');
+        const textoProgresso = progresso.proximo
+            ? `${xpTotal} XP — faltam ${progresso.faltam} XP para o Nível ${progresso.proximo.nivel} (${progresso.proximo.nome_titulo})`
+            : `${xpTotal} XP — nível máximo alcançado! 🏆`;
+        document.getElementById('progressoNivelTexto').textContent = textoProgresso;
+    }
+
+    // ==================================================
+    // TRILHA DOS 15 NÍVEIS
+    // ==================================================
+    const trilha = document.getElementById('trilhaNiveis');
+    if (!niveis.length) {
+        trilha.innerHTML = '<p class="metadado">Não foi possível carregar os níveis.</p>';
+        return;
+    }
+
+    trilha.innerHTML = niveis.map(n => {
+        const conquistado = n.nivel <= nivelAtual;
+        const atual = n.nivel === nivelAtual;
         return `
-            <div class="cartao-nivel ${classe}">
-                <div class="cartao-nivel-numero">${n.nivel}</div>
-                <div class="cartao-nivel-nome">${n.nome_titulo}</div>
-                <div class="cartao-nivel-xp">${n.xp_minimo} XP</div>
-                ${ehAtual ? '<span class="cartao-nivel-tag">Você está aqui</span>' : ''}
-                ${!desbloqueado ? '<span class="cartao-nivel-cadeado">🔒</span>' : ''}
+            <div class="degrau-nivel ${conquistado ? 'conquistado' : 'bloqueado'} ${atual ? 'atual' : ''}">
+                <div class="degrau-nivel-numero">${conquistado ? n.nivel : '🔒'}</div>
+                <div class="degrau-nivel-info">
+                    <strong>${n.nome_titulo}</strong>
+                    <span class="metadado">Nível ${n.nivel} • a partir de ${n.xp_minimo} XP</span>
+                </div>
+                ${atual ? '<span class="status prazo-hoje">Você está aqui</span>' : ''}
             </div>
         `;
     }).join('');

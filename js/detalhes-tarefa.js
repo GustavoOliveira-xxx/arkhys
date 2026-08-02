@@ -4,7 +4,7 @@
 // existe um elemento fixo no HTML de cada página).
 // ==================================================
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, nomeExibicao } from './midia.js';
+import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, nomeExibicao, extensaoDoArquivo } from './midia.js';
 
 let overlayAtual = null;
 
@@ -14,11 +14,12 @@ export function fecharDetalhes() {
         overlayAtual.remove();
         overlayAtual = null;
     }
+    document.getElementById('lightboxAnexo')?.remove();
 }
 
 function formatarData(dataISO) {
     if (!dataISO) return '—';
-    return new Date(dataISO + 'T00:00:00').toLocaleDateString('pt-BR');
+    return new Date(dataISO + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function calcularStatus(tarefa) {
@@ -29,8 +30,12 @@ function calcularStatus(tarefa) {
     return { classe: 'proximo', texto: 'Em breve' };
 }
 
-// Monta o bloco de anexo: miniatura real (se for imagem) ou um
-// "cartão" com ícone + nome + link para abrir (demais tipos de arquivo)
+const EMOJI_DIFICULDADE = { facil: '🟢', medio: '🟡', dificil: '🔴' };
+const NOME_DIFICULDADE_LOCAL = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' };
+
+// Monta o bloco de anexo: galeria de imagem com lightbox, visualizador de
+// PDF embutido (não obriga baixar, mas sempre dá a opção), ou cartão com
+// ícone + link para os demais tipos de arquivo.
 async function montarBlocoAnexo(tarefa) {
     if (!tarefa.anexo_path) return '';
 
@@ -38,47 +43,67 @@ async function montarBlocoAnexo(tarefa) {
     const { data } = await supabase.storage.from('arquivos').createSignedUrl(tarefa.anexo_path, 60 * 30);
     const url = data?.signedUrl;
 
-    if (!url) return '';
+    if (!url) return '<p class="metadado">Não foi possível carregar o anexo.</p>';
 
     if (ehImagem(nomeArquivo, tarefa.anexo_tipo)) {
-        return `<a class="detalhe-anexo-preview" href="${url}" target="_blank" rel="noopener">
-            <img src="${url}" alt="${nomeArquivo}">
-        </a>`;
+        return `<div class="detalhe-anexo-galeria">
+            <img src="${url}" alt="${nomeArquivo}" data-acao="ampliar" data-url="${url}">
+            <div class="detalhe-anexo-legenda">
+                <span>🖼️ ${nomeArquivo}</span>
+                <a href="${url}" download="${nomeArquivo}" title="Baixar">⬇️ Baixar</a>
+            </div>
+        </div>`;
     }
 
-    return `<a class="detalhe-anexo-arquivo" href="${url}" target="_blank" rel="noopener">
+    if (extensaoDoArquivo(nomeArquivo) === 'pdf') {
+        return `<div class="detalhe-anexo-pdf">
+            <iframe src="${url}#toolbar=1" title="${nomeArquivo}" loading="lazy"></iframe>
+            <div class="detalhe-anexo-legenda">
+                <span>📕 ${nomeArquivo}</span>
+                <div>
+                    <a href="${url}" target="_blank" rel="noopener">Abrir em nova aba</a>
+                    <a href="${url}" download="${nomeArquivo}" title="Baixar">⬇️ Baixar</a>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    return `<a class="detalhe-anexo-arquivo" href="${url}" download="${nomeArquivo}">
         <span class="detalhe-anexo-icone">${iconePorTipo(nomeArquivo, tarefa.anexo_tipo)}</span>
         <span>${rotuloPorTipo(nomeArquivo, tarefa.anexo_tipo)} — ${nomeArquivo}</span>
+        <span class="detalhe-anexo-baixar">⬇️ Baixar</span>
     </a>`;
 }
 
-// Monta a linha de membros (só quando a tarefa é em grupo)
+// Monta a linha de membros como LISTA (não mais texto separado por vírgula)
 function montarLinhaMembros(tarefa, membros = []) {
     if (tarefa.modalidade !== 'grupo' || !(tarefa.membros_ids || []).length) return '';
 
-    const nomes = tarefa.membros_ids
+    const itens = tarefa.membros_ids
         .map(id => membros.find(m => m.id === id)?.nome)
         .filter(Boolean)
-        .join(', ');
+        .map(nome => `<li>${nome}</li>`)
+        .join('');
 
-    return `<div class="detalhe-linha">
+    return `<div class="detalhe-linha detalhe-linha-lista">
         <span class="detalhe-rotulo">Membros</span>
-        <span class="detalhe-valor">${nomes || '—'}</span>
+        <ul class="detalhe-lista">${itens || '<li>—</li>'}</ul>
     </div>`;
 }
 
-// Monta a linha de ferramentas (só quando há alguma marcada)
+// Monta a linha de ferramentas como LISTA (não mais texto separado por vírgula)
 function montarLinhaFerramentas(tarefa, ferramentas = []) {
     if (!(tarefa.ferramentas_ids || []).length) return '';
 
-    const nomes = tarefa.ferramentas_ids
+    const itens = tarefa.ferramentas_ids
         .map(id => ferramentas.find(f => f.id === id)?.nome)
         .filter(Boolean)
-        .join(', ');
+        .map(nome => `<li>${nome}</li>`)
+        .join('');
 
-    return `<div class="detalhe-linha">
+    return `<div class="detalhe-linha detalhe-linha-lista">
         <span class="detalhe-rotulo">Ferramentas</span>
-        <span class="detalhe-valor">${nomes || '—'}</span>
+        <ul class="detalhe-lista">${itens || '<li>—</li>'}</ul>
     </div>`;
 }
 
@@ -117,7 +142,11 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
         <div class="form-modal modal-detalhes view-modal">
             <div class="cabecalho-modal">
                 <h3>Saiba mais</h3>
-                <button type="button" class="btn-acao" data-acao="fechar">✕</button>
+                <div class="cabecalho-modal-acoes">
+                    <button type="button" class="btn-acao" data-acao="compartilhar" title="Compartilhar">🔗</button>
+                    <button type="button" class="btn-acao" data-acao="imprimir" title="Imprimir / salvar em PDF">🖨️</button>
+                    <button type="button" class="btn-acao" data-acao="fechar" title="Fechar">✕</button>
+                </div>
             </div>
 
             <div class="detalhe-cabecalho">
@@ -135,6 +164,10 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                 <div class="detalhe-linha">
                     <span class="detalhe-rotulo">Entrega</span>
                     <span class="detalhe-valor">${formatarData(tarefa.data_entrega)}</span>
+                </div>
+                <div class="detalhe-linha">
+                    <span class="detalhe-rotulo">Dificuldade</span>
+                    <span class="detalhe-valor">${EMOJI_DIFICULDADE[tarefa.dificuldade] || '🟡'} ${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span>
                 </div>
                 <div class="detalhe-linha">
                     <span class="detalhe-rotulo">Modalidade</span>
@@ -186,10 +219,122 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
         botaoExcluir.addEventListener('click', () => aoExcluir(tarefa));
     }
 
+    overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
+    overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas));
+
     // Carrega o anexo de forma assíncrona (precisa de URL assinada)
     if (tarefa.anexo_path) {
         const slot = overlay.querySelector('[data-slot="anexo"]');
         const html = await montarBlocoAnexo(tarefa);
         if (slot) slot.outerHTML = html || '';
+
+        // Clique na imagem do anexo abre o lightbox (visualização ampliada)
+        overlay.querySelector('[data-acao="ampliar"]')?.addEventListener('click', (e) => {
+            abrirLightbox(e.currentTarget.dataset.url, tarefa.anexo_nome || nomeExibicao(tarefa.anexo_path));
+        });
     }
+}
+
+// ==================================================
+// LIGHTBOX — visualização ampliada da imagem anexada
+// ==================================================
+function abrirLightbox(url, nome) {
+    document.getElementById('lightboxAnexo')?.remove();
+    const lightbox = document.createElement('div');
+    lightbox.id = 'lightboxAnexo';
+    lightbox.className = 'lightbox-overlay';
+    lightbox.innerHTML = `
+        <img src="${url}" alt="${nome}">
+        <button type="button" class="btn-acao lightbox-fechar" title="Fechar">✕</button>
+    `;
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox || e.target.classList.contains('lightbox-fechar')) lightbox.remove();
+    });
+    document.body.appendChild(lightbox);
+}
+
+// ==================================================
+// COMPARTILHAR — Web Share API no celular, com fallback
+// de copiar um resumo em texto pra área de transferência
+// ==================================================
+async function compartilharTarefa(tarefa, materia) {
+    const resumo = `📋 ${tarefa.titulo}\n` +
+        `${materia ? `Matéria: ${materia.nome}\n` : ''}` +
+        `Entrega: ${formatarData(tarefa.data_entrega)}\n` +
+        `${tarefa.descricao ? `\n${tarefa.descricao}\n` : ''}` +
+        `\nCompartilhado via Arkhys`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: tarefa.titulo, text: resumo });
+        } catch (erro) {
+            if (erro.name !== 'AbortError') console.error('Erro ao compartilhar:', erro);
+        }
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(resumo);
+        alert('📋 Resumo da atividade copiado! Cole onde quiser compartilhar.');
+    } catch {
+        alert(resumo);
+    }
+}
+
+// ==================================================
+// IMPRIMIR — abre uma janela com um resumo bonito e
+// chama a impressão (o usuário pode escolher "Salvar como PDF")
+// ==================================================
+function imprimirTarefa(tarefa, materia, membros, ferramentas) {
+    const st = calcularStatus(tarefa);
+    const nomesMembros = tarefa.modalidade === 'grupo'
+        ? (tarefa.membros_ids || []).map(id => membros.find(m => m.id === id)?.nome).filter(Boolean)
+        : [];
+    const nomesFerramentas = (tarefa.ferramentas_ids || []).map(id => ferramentas.find(f => f.id === id)?.nome).filter(Boolean);
+
+    const janela = window.open('', '_blank', 'width=800,height=900');
+    if (!janela) {
+        alert('Seu navegador bloqueou a janela de impressão. Permita pop-ups para este site.');
+        return;
+    }
+
+    janela.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>${tarefa.titulo} — Arkhys</title>
+            <style>
+                * { box-sizing: border-box; }
+                body { font-family: 'Georgia', serif; color: #1a1a1a; max-width: 720px; margin: 40px auto; padding: 0 24px; line-height: 1.6; }
+                .cabecalho { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #c1121f; padding-bottom: 16px; margin-bottom: 24px; }
+                .cabecalho h1 { font-size: 1.1rem; letter-spacing: 2px; color: #c1121f; margin: 0; }
+                h2 { font-size: 1.6rem; margin: 0 0 4px; }
+                .status-impressao { display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; background: #eee; margin-bottom: 20px; }
+                .linha { display: flex; gap: 8px; padding: 10px 0; border-bottom: 1px solid #e5e5e5; }
+                .rotulo { font-weight: bold; width: 140px; flex-shrink: 0; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; color: #555; }
+                .descricao { margin: 20px 0; padding: 16px; background: #f7f5f2; border-left: 3px solid #c1121f; }
+                ul { margin: 4px 0 0; padding-left: 20px; }
+                footer { margin-top: 40px; text-align: center; font-size: 0.75rem; color: #999; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="cabecalho"><h1>ARKHYS — RESUMO DA ATIVIDADE</h1></div>
+            <h2>${tarefa.titulo}</h2>
+            <span class="status-impressao">${st.texto}</span>
+            ${tarefa.descricao ? `<div class="descricao">${tarefa.descricao}</div>` : ''}
+            <div class="linha"><span class="rotulo">Matéria</span><span>${materia ? materia.nome : 'Sem matéria'}</span></div>
+            <div class="linha"><span class="rotulo">Entrega</span><span>${formatarData(tarefa.data_entrega)}</span></div>
+            <div class="linha"><span class="rotulo">Dificuldade</span><span>${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span></div>
+            <div class="linha"><span class="rotulo">Modalidade</span><span>${tarefa.modalidade === 'grupo' ? 'Em grupo' : 'Individual'}</span></div>
+            ${nomesMembros.length ? `<div class="linha"><span class="rotulo">Membros</span><ul>${nomesMembros.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
+            ${nomesFerramentas.length ? `<div class="linha"><span class="rotulo">Ferramentas</span><ul>${nomesFerramentas.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
+            ${tarefa.anexo_nome ? `<div class="linha"><span class="rotulo">Anexo</span><span>${tarefa.anexo_nome}</span></div>` : ''}
+            <footer>Gerado por Arkhys — Organize · Evolua · Conquiste</footer>
+        </body>
+        </html>
+    `);
+    janela.document.close();
+    janela.onload = () => janela.print();
 }

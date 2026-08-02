@@ -1,7 +1,7 @@
 import { supabase } from './supabase-config.js';
 import { sairDaConta } from './auth.js';
-import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica, sanitizarNomeArquivo } from './midia.js';
-import { carregarNiveis, calcularNivel } from './xp-service.js';
+import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica, nomeArquivoSeguro } from './midia.js';
+import { concederXp } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -51,12 +51,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (perfil) {
-        const niveis = await carregarNiveis();
-        const nomeNivel = calcularNivel(perfil.xp_total, niveis).nome_titulo;
-        document.getElementById('nivelPerfil').textContent = `Nível ${perfil.nivel_atual} — ${nomeNivel}`;
+        document.getElementById('nivelPerfil').textContent = `Nível ${perfil.nivel_atual}`;
         document.getElementById('xpPerfil').textContent = `${perfil.xp_total} XP acumulado`;
         renderizarAvatar();
     }
+    // Atualiza os textos de XP/Nível na tela buscando os valores mais recentes do banco
+    async function atualizarExibicaoXp() {
+        const { data } = await supabase.from('perfil').select('xp_total, nivel_atual').eq('usuario_id', user.id).maybeSingle();
+        if (!data) return;
+        perfil = { ...perfil, ...data };
+        document.getElementById('nivelPerfil').textContent = `Nível ${data.nivel_atual}`;
+        document.getElementById('xpPerfil').textContent = `${data.xp_total} XP acumulado`;
+    }
+
+    // Bônus único de "perfil completo": nome preenchido + foto anexada
+    async function verificarPerfilCompleto() {
+        if (perfil?.foto_url && (perfil?.nome_completo || nome)) {
+            const resultado = await concederXp('perfil_completo', 'unico', 25);
+            if (resultado !== null) await atualizarExibicaoXp();
+        }
+    }
+    await verificarPerfilCompleto();
 
     // ==================================================
     // FOTO DE PERFIL
@@ -71,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnAlterarFoto.textContent = 'Enviando...';
 
         const caminhoAntigo = perfil?.foto_url || null;
-        const novoCaminho = `${user.id}/avatar/${Date.now()}_${sanitizarNomeArquivo(arquivo.name)}`;
+        const novoCaminho = `${user.id}/avatar/${Date.now()}_${nomeArquivoSeguro(arquivo.name)}`;
 
         const { error: erroUpload } = await enviarMidiaPublica(novoCaminho, arquivo);
         if (erroUpload) {
@@ -102,6 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         inputFotoPerfil.value = '';
         btnAlterarFoto.disabled = false;
         btnAlterarFoto.textContent = '📷 Alterar foto';
+        await verificarPerfilCompleto();
     });
 
     // ==================================================
@@ -147,7 +163,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         await supabase.from('perfil').update({ nome_completo: novoNome }).eq('usuario_id', user.id);
 
         document.getElementById('nomePerfil').textContent = novoNome;
+        perfil = { ...perfil, nome_completo: novoNome };
         alert('Dados atualizados com sucesso!');
+        await verificarPerfilCompleto();
     });
 
     // Gerar relatório

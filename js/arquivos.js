@@ -1,6 +1,7 @@
 import { supabase } from './supabase-config.js';
 import { iconePorTipo, ehImagem, urlsAssinadasEmLote } from './midia.js';
 import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
+import { concederXp } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!arquivo) return;
 
         btnEnviar.disabled = true;
-        const { error } = await enviarERegistrarArquivo({
+        const { data, error } = await enviarERegistrarArquivo({
             usuarioId: user.id,
             arquivo,
             pasta: 'cofre',
@@ -32,8 +33,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnEnviar.disabled = false;
         inputArquivo.value = '';
 
-        if (error) alert('Erro ao enviar: ' + error.message);
-        else carregarArquivos();
+        if (error) {
+            alert('Erro ao enviar: ' + error.message);
+        } else {
+            if (data?.registro?.id) await concederXp('upload_cofre', `arquivo:${data.registro.id}`, 5);
+            carregarArquivos();
+        }
     });
 
     // Carrega lista a partir da tabela `arquivos` (inclui os anexos lançados
