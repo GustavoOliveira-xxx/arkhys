@@ -2308,3 +2308,76 @@ body.tela-acesso {
     0% { left: -100%; }
     100% { left: 100%; }
 }
+/* ==================================================
+   ENTREGAS — espaços de upload por tipo de entrega
+   (modal "Saiba mais") e cofre
+   ================================================== */
+.lista-entregas {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.entrega-slot {
+    border: 1px dashed var(--borda, rgba(0, 0, 0, 0.18));
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.entrega-slot-ok {
+    border-style: solid;
+}
+
+.entrega-slot-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.entrega-slot-nome {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.entrega-slot-arquivos {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.item-entrega-arquivo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.btn-entrega-abrir {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+.btn-entrega-abrir:hover span {
+    text-decoration: underline;
+}
+
+.entrega-slot-botao {
+    align-self: flex-start;
+    cursor: pointer;
+}

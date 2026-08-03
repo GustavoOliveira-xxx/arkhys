@@ -48,6 +48,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { label: 'TIPO', displayLabel: 'Tipo', type: 'text', key: 'tipo', placeholder: 'Ex: Livro, Aplicativo' }
             ]
         },
+        'tipos_entrega': {
+            titulo: 'Tipos de Entrega', tabela: 'tipos_entrega', msgVazio: 'Nenhum tipo de entrega cadastrado.',
+            campos: [
+                { label: 'NOME DO TIPO DE ENTREGA', displayLabel: 'Nome', type: 'text', key: 'nome', required: true, placeholder: 'Ex: ABNT, Slides, Vídeo' },
+                { label: 'FORMATOS ACEITOS', displayLabel: 'Formatos', type: 'text', key: 'formatos_aceitos', placeholder: 'Ex: .docx  ou  .pdf, .pptx' },
+                { label: 'DESCRIÇÃO', displayLabel: 'Descrição', type: 'textarea', key: 'descricao' }
+            ]
+        },
         'membros': {
             titulo: 'Membros', tabela: 'membros', msgVazio: 'Nenhum membro cadastrado.',
             campos: [

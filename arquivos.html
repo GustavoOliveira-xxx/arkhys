@@ -74,6 +74,12 @@
             <input type="file" id="inputArquivo" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg" hidden>
         </header>
 
+        <div class="abas-tarefas" id="abasArquivos" role="tablist">
+            <button type="button" class="aba-tarefa ativa" data-filtro="todos"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-arquivos"></use></svg> Todos</button>
+            <button type="button" class="aba-tarefa" data-filtro="entregas"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-entrega"></use></svg> Entregas</button>
+            <button type="button" class="aba-tarefa" data-filtro="anexos"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-anexo"></use></svg> Anexos e arquivos</button>
+        </div>
+
         <div class="lista-itens" id="listaArquivos"></div>
     </main>
 

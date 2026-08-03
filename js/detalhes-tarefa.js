@@ -5,7 +5,7 @@
 // ==================================================
 import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
-import { listarAnexosDaTarefa } from './arquivos-service.js';
+import { listarAnexosDaTarefa, listarEntregasDaTarefa, listarTiposEntrega, enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
 
 let overlayAtual = null;
 
@@ -171,6 +171,11 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                 ${montarLinhaFerramentas(tarefa, ferramentas)}
             </div>
 
+            <div class="detalhe-secao" data-secao="entregas" hidden>
+                <span class="detalhe-rotulo">Entregas</span>
+                <div data-slot="entregas">Carregando entregas...</div>
+            </div>
+
             <div class="detalhe-secao" data-secao="anexos">
                 <span class="detalhe-rotulo">Anexos</span>
                 <div data-slot="anexos">Carregando anexos...</div>
@@ -216,6 +221,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
     overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas));
 
+    // Espaços de entrega (um por tipo de entrega selecionado na tarefa)
+    await renderizarEntregas(overlay, tarefa);
+
     // Carrega os anexos de forma assíncrona (precisa de URLs assinadas)
     const secaoAnexos = overlay.querySelector('[data-secao="anexos"]');
     const slotAnexos = overlay.querySelector('[data-slot="anexos"]');
@@ -235,6 +243,99 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
             });
         });
     }
+}
+
+// ==================================================
+// ENTREGAS — um "espaço" de upload por tipo de entrega
+// selecionado na tarefa. Os arquivos vão para o mesmo bucket
+// privado `arquivos` (pasta entregas/) e são registrados na
+// tabela `arquivos` com eh_entrega = true + tipo_entrega_id.
+// ==================================================
+async function renderizarEntregas(overlay, tarefa) {
+    const secao = overlay.querySelector('[data-secao="entregas"]');
+    const slot = overlay.querySelector('[data-slot="entregas"]');
+    if (!secao || !slot) return;
+
+    const ids = tarefa.tipos_entrega_ids || [];
+    if (!ids.length) { secao.hidden = true; return; }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { secao.hidden = true; return; }
+
+    secao.hidden = false;
+
+    async function desenhar() {
+        const [tipos, mapa] = await Promise.all([
+            listarTiposEntrega(user.id, ids),
+            listarEntregasDaTarefa(tarefa.id)
+        ]);
+
+        slot.innerHTML = `<div class="lista-entregas">${tipos.map(tipo => {
+            const arquivos = mapa[tipo.id] || [];
+            const enviados = arquivos.map(a => `
+                <div class="item-entrega-arquivo">
+                    <button type="button" class="btn-entrega-abrir" data-acao="abrir-entrega" data-caminho="${a.url_arquivo}" data-nome="${a.nome_arquivo}">
+                        ${iconeSvgPorTipo(a.nome_arquivo)} <span>${a.nome_arquivo}</span>
+                    </button>
+                    <button type="button" class="btn-remover-anexo" data-acao="excluir-entrega" data-caminho="${a.url_arquivo}" title="Remover entrega"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>
+                </div>`).join('');
+
+            return `
+                <div class="entrega-slot ${arquivos.length ? 'entrega-slot-ok' : ''}">
+                    <div class="entrega-slot-topo">
+                        <span class="entrega-slot-nome"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-entrega"></use></svg> ${tipo.nome}</span>
+                        ${tipo.formatos_aceitos ? `<span class="metadado">${tipo.formatos_aceitos}</span>` : ''}
+                    </div>
+                    ${tipo.descricao ? `<p class="metadado">${tipo.descricao}</p>` : ''}
+                    <div class="entrega-slot-arquivos">${enviados || '<span class="texto-vazio-pequeno">Nenhum arquivo enviado ainda.</span>'}</div>
+                    <label class="botao botao-secundario entrega-slot-botao">
+                        Enviar arquivo
+                        <input type="file" hidden data-acao="upload-entrega" data-tipo="${tipo.id}" ${tipo.formatos_aceitos ? `accept="${tipo.formatos_aceitos.replace(/\s+/g, '')}"` : ''}>
+                    </label>
+                </div>`;
+        }).join('')}</div>`;
+
+        // Enviar arquivo de entrega
+        slot.querySelectorAll('[data-acao="upload-entrega"]').forEach(input => {
+            input.addEventListener('change', async () => {
+                const arquivo = input.files[0];
+                if (!arquivo) return;
+                input.disabled = true;
+                const { error } = await enviarERegistrarArquivo({
+                    usuarioId: user.id,
+                    arquivo,
+                    pasta: 'entregas',
+                    categoria: 'Entrega',
+                    referenciaTarefaId: tarefa.id,
+                    tipoEntregaId: Number(input.dataset.tipo),
+                    ehEntrega: true
+                });
+                input.disabled = false;
+                if (error) { alert('Erro ao enviar entrega: ' + error.message); return; }
+                desenhar();
+            });
+        });
+
+        // Abrir arquivo de entrega
+        slot.querySelectorAll('[data-acao="abrir-entrega"]').forEach(botao => {
+            botao.addEventListener('click', async () => {
+                const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(botao.dataset.caminho, 60 * 30);
+                if (error) { alert('Erro ao abrir arquivo: ' + error.message); return; }
+                abrirVisualizadorArquivo(data.signedUrl, botao.dataset.nome);
+            });
+        });
+
+        // Remover arquivo de entrega
+        slot.querySelectorAll('[data-acao="excluir-entrega"]').forEach(botao => {
+            botao.addEventListener('click', async () => {
+                if (!confirm('Remover esse arquivo de entrega?')) return;
+                await removerArquivoPorCaminho(user.id, botao.dataset.caminho);
+                desenhar();
+            });
+        });
+    }
+
+    await desenhar();
 }
 
 // ==================================================

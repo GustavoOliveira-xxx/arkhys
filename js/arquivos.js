@@ -13,6 +13,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnEnviar = document.getElementById('btnEnviar');
     const inputArquivo = document.getElementById('inputArquivo');
     const lista = document.getElementById('listaArquivos');
+    const abasArquivos = document.getElementById('abasArquivos');
+
+    let filtroAtivo = 'todos'; // 'todos' | 'entregas' | 'anexos'
+
+    abasArquivos?.addEventListener('click', (e) => {
+        const aba = e.target.closest('.aba-tarefa');
+        if (!aba) return;
+        filtroAtivo = aba.dataset.filtro;
+        abasArquivos.querySelectorAll('.aba-tarefa').forEach(b => b.classList.toggle('ativa', b === aba));
+        carregarArquivos();
+    });
 
     // Abre seletor de arquivos
     btnEnviar.addEventListener('click', () => inputArquivo.click());
@@ -46,11 +57,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function carregarArquivos() {
         lista.innerHTML = '<div class="item-vazio">Carregando...</div>';
 
-        const { data, error } = await supabase
+        let consulta = supabase
             .from('arquivos')
-            .select('*, tarefas:referencia_tarefa_id ( titulo )')
-            .eq('usuario_id', user.id)
-            .order('created_at', { ascending: false });
+            .select('*, tarefas:referencia_tarefa_id ( titulo ), tipos_entrega:tipo_entrega_id ( nome )')
+            .eq('usuario_id', user.id);
+
+        if (filtroAtivo === 'entregas') consulta = consulta.eq('eh_entrega', true);
+        if (filtroAtivo === 'anexos') consulta = consulta.or('eh_entrega.is.null,eh_entrega.eq.false');
+
+        const { data, error } = await consulta.order('created_at', { ascending: false });
 
         if (error) {
             console.error('Erro ao carregar arquivos:', error);
@@ -59,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (!data || data.length === 0) {
-            lista.innerHTML = `<div class="item-vazio">Nenhum arquivo salvo ainda 📁</div>`;
+            lista.innerHTML = `<div class="item-vazio">${filtroAtivo === 'entregas' ? 'Nenhuma entrega enviada ainda 📤' : 'Nenhum arquivo salvo ainda 📁'}</div>`;
             return;
         }
 
@@ -70,9 +85,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         lista.innerHTML = data.map(arq => {
             const previa = urlsPrevia[arq.url_arquivo];
             const icone = previa ? `<img src="${previa}" alt="">` : iconePorTipo(arq.nome_arquivo);
-            const origem = arq.referencia_tarefa_id
-                ? `📎 Anexo de tarefa${arq.tarefas?.titulo ? ': ' + arq.tarefas.titulo : ''}`
-                : (arq.categoria || 'Geral');
+            const nomeTarefa = arq.tarefas?.titulo ? ': ' + arq.tarefas.titulo : '';
+            const origem = arq.eh_entrega
+                ? `📤 Entrega${arq.tipos_entrega?.nome ? ' (' + arq.tipos_entrega.nome + ')' : ''}${nomeTarefa}`
+                : (arq.referencia_tarefa_id
+                    ? `📎 Anexo de tarefa${nomeTarefa}`
+                    : (arq.categoria || 'Geral'));
 
             return `
                 <div class="item-tarefa" data-id="${arq.id}" data-caminho="${arq.url_arquivo}" data-nome="${arq.nome_arquivo}">

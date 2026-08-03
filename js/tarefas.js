@@ -34,6 +34,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Elementos — ferramentas
     const listaFerramentas = document.getElementById('listaFerramentas');
 
+    // Elementos — tipos de entrega
+    const listaTiposEntrega = document.getElementById('listaTiposEntrega');
+
     // Elementos — anexos (múltiplos)
     const inputAnexo = document.getElementById('anexo');
     const listaAnexosForm = document.getElementById('listaAnexosForm');
@@ -42,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let materias = [];
     let membros = [];
     let ferramentas = [];
+    let tiposEntrega = [];
     let anexosMap = {};        // { tarefaId: [anexos] } — carregado em lote junto com as tarefas
     let abaAtiva = 'pendentes'; // 'pendentes' | 'concluidas'
 
@@ -120,6 +124,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             <label class="item-ferramenta-checkbox">
                 <input type="checkbox" value="${f.id}" ${selecionadas.includes(f.id) ? 'checked' : ''}>
                 <span>${f.nome}${f.tipo ? ` <span class="metadado">(${f.tipo})</span>` : ''}</span>
+            </label>
+        `).join('');
+    }
+
+    // ==================================================
+    // CARREGAR TIPOS DE ENTREGA (cadastrados em "Cadastros")
+    // ==================================================
+    async function carregarTiposEntrega() {
+        const { data, error } = await supabase
+            .from('tipos_entrega')
+            .select('*')
+            .eq('usuario_id', user.id)
+            .order('nome', { ascending: true });
+
+        if (error) {
+            console.error('Erro ao carregar tipos de entrega:', error);
+            return;
+        }
+
+        tiposEntrega = data || [];
+        renderizarTiposEntrega();
+    }
+
+    // Desenha os checkboxes de tipos de entrega (marcando os já selecionados)
+    function renderizarTiposEntrega(selecionados = []) {
+        if (!listaTiposEntrega) return;
+
+        if (tiposEntrega.length === 0) {
+            listaTiposEntrega.innerHTML = `<p class="texto-vazio-pequeno">Nenhum tipo de entrega cadastrado ainda. Cadastre em "Cadastros".</p>`;
+            return;
+        }
+
+        listaTiposEntrega.innerHTML = tiposEntrega.map(t => `
+            <label class="item-ferramenta-checkbox">
+                <input type="checkbox" value="${t.id}" ${selecionados.includes(t.id) ? 'checked' : ''}>
+                <span>${t.nome}${t.formatos_aceitos ? ` <span class="metadado">(${t.formatos_aceitos})</span>` : ''}</span>
             </label>
         `).join('');
     }
@@ -291,6 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         secaoGrupo.hidden = true;
         listaCamposMembros.innerHTML = '';
         renderizarFerramentas();
+        renderizarTiposEntrega();
         anexosExistentes = [];
         anexosNovos = [];
         anexosParaRemover = new Set();
@@ -407,6 +448,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Ferramentas
         renderizarFerramentas(tarefa.ferramentas_ids || []);
+
+        // Tipos de entrega
+        renderizarTiposEntrega(tarefa.tipos_entrega_ids || []);
 
         // Anexos (múltiplos) — parte do mapa já carregado em lote
         inputAnexo.value = '';
@@ -543,6 +587,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ferramentasIds = Array.from(listaFerramentas.querySelectorAll('input[type="checkbox"]:checked'))
             .map(cb => Number(cb.value));
 
+        // Coleta os tipos de entrega marcados
+        const tiposEntregaIds = listaTiposEntrega
+            ? Array.from(listaTiposEntrega.querySelectorAll('input[type="checkbox"]:checked')).map(cb => Number(cb.value))
+            : [];
+
         const dadosTarefa = {
             titulo: document.getElementById('titulo').value.trim(),
             descricao: document.getElementById('descricao').value.trim(),
@@ -552,6 +601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             modalidade,
             membros_ids: membrosIds,
             ferramentas_ids: ferramentasIds,
+            tipos_entrega_ids: tiposEntregaIds,
             usuario_id: user.id
         };
 
@@ -611,5 +661,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarMaterias();
     await carregarMembros();
     await carregarFerramentas();
+    await carregarTiposEntrega();
     await carregarTarefas();
 });

@@ -10,7 +10,7 @@ import { nomeArquivoSeguro } from './midia.js';
 
 // Envia um arquivo para o bucket privado "arquivos" e registra a
 // referência na tabela `arquivos`, para aparecer no Cofre.
-export async function enviarERegistrarArquivo({ usuarioId, arquivo, pasta = '', categoria = 'Geral', referenciaTarefaId = null }) {
+export async function enviarERegistrarArquivo({ usuarioId, arquivo, pasta = '', categoria = 'Geral', referenciaTarefaId = null, tipoEntregaId = null, ehEntrega = false }) {
     const caminho = `${usuarioId}/${pasta ? pasta + '/' : ''}${Date.now()}_${nomeArquivoSeguro(arquivo.name)}`;
 
     const { error: erroUpload } = await supabase.storage.from('arquivos').upload(caminho, arquivo);
@@ -23,6 +23,8 @@ export async function enviarERegistrarArquivo({ usuarioId, arquivo, pasta = '', 
             categoria,
             url_arquivo: caminho,
             referencia_tarefa_id: referenciaTarefaId,
+            tipo_entrega_id: tipoEntregaId,
+            eh_entrega: ehEntrega,
             usuario_id: usuarioId
         })
         .select()
@@ -86,10 +88,54 @@ export async function listarAnexosDaTarefa(tarefaId) {
         .from('arquivos')
         .select('*')
         .eq('referencia_tarefa_id', tarefaId)
+        // só os anexos/enunciados — as entregas têm listagem própria
+        .or('eh_entrega.is.null,eh_entrega.eq.false')
         .order('created_at', { ascending: true });
 
     if (error) {
         console.error('Erro ao listar anexos da tarefa:', error.message);
+        return [];
+    }
+    return data || [];
+}
+
+// Lista as ENTREGAS de uma tarefa (arquivos com eh_entrega = true),
+// devolvendo um mapa { tipo_entrega_id: [arquivos] } para montar
+// um "espaço" de upload por tipo de entrega no modal "Saiba mais".
+export async function listarEntregasDaTarefa(tarefaId) {
+    if (!tarefaId) return {};
+    const { data, error } = await supabase
+        .from('arquivos')
+        .select('*')
+        .eq('referencia_tarefa_id', tarefaId)
+        .eq('eh_entrega', true)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Erro ao listar entregas da tarefa:', error.message);
+        return {};
+    }
+
+    const mapa = {};
+    (data || []).forEach(arq => {
+        const chave = arq.tipo_entrega_id ?? 'sem_tipo';
+        if (!mapa[chave]) mapa[chave] = [];
+        mapa[chave].push(arq);
+    });
+    return mapa;
+}
+
+// Busca os TIPOS DE ENTREGA de um usuário (cadastro), opcionalmente
+// filtrando por uma lista de ids (tarefa.tipos_entrega_ids).
+export async function listarTiposEntrega(usuarioId, ids = null) {
+    let consulta = supabase.from('tipos_entrega').select('*').eq('usuario_id', usuarioId);
+    if (Array.isArray(ids)) {
+        if (ids.length === 0) return [];
+        consulta = consulta.in('id', ids);
+    }
+    const { data, error } = await consulta.order('nome', { ascending: true });
+    if (error) {
+        console.error('Erro ao listar tipos de entrega:', error.message);
         return [];
     }
     return data || [];
@@ -107,6 +153,7 @@ export async function mapaAnexosPorTarefa(tarefaIds = []) {
         .from('arquivos')
         .select('*')
         .in('referencia_tarefa_id', unicos)
+        .or('eh_entrega.is.null,eh_entrega.eq.false')
         .order('created_at', { ascending: true });
 
     if (error) {
