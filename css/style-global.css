@@ -276,6 +276,15 @@ input:focus-visible {
     border-radius: var(--raio-sm);
 }
 
+/* Logo flutuante do mobile — fica FORA do <nav>, de propósito, pra não
+   herdar o containing block criado pelo backdrop-filter do menu (esse
+   era o bug: um position:fixed dentro do <nav> com backdrop-filter se
+   ancora relativo ao próprio <nav>, não à tela — por isso a versão
+   antiga ficava presa dentro da barra inferior, tampando Cofre/Perfil). */
+.logo-mobile-flutuante {
+    display: none;
+}
+
 .nav-logo img {
     /* A logo real é um emblema largo (~1.48:1) — a altura define o
        tamanho, a largura acompanha proporcionalmente via 'auto'.
@@ -845,12 +854,15 @@ input:focus-visible {
     }
 
     .nav-logo {
+        display: none;
+    }
+
+    .logo-mobile-flutuante {
         display: flex;
         position: fixed;
         top: calc(0.6rem + env(safe-area-inset-top, 0px));
         right: 0.6rem;
-        left: auto;
-        z-index: 101;
+        z-index: 150;
         padding: 0.3rem 0.6rem;
         background: rgba(12, 10, 16, 0.72);
         backdrop-filter: blur(18px) saturate(140%);
@@ -859,8 +871,10 @@ input:focus-visible {
         border-radius: var(--raio-md, 12px);
     }
 
-    .nav-logo img {
-        height: 34px;
+    .logo-mobile-flutuante img {
+        height: 30px;
+        width: auto;
+        display: block;
     }
 
     .nav-links {
