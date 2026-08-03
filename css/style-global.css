@@ -1,18 +1,4 @@
-/* ==========================================================================
-   ARKHYS — SISTEMA DE ORGANIZAÇÃO ACADÊMICA
-   Folha de estilo global — Painel Principal
-   Modo: exclusivamente escuro
 
-   DIREÇÃO TIPOGRÁFICA
-   Arkhys mistura duas heranças: a de um caderno/ficha catalográfica
-   acadêmica e a de um painel técnico. Por isso a tipografia usa três
-   papéis distintos em vez de uma única fonte para tudo:
-     — Fraunces (serifada, com caráter) para números grandes e títulos,
-       trazendo peso "de arquivo" a estatísticas e cabeçalhos.
-     — Inter (sem serifa, neutra) para textos de interface, corpo e nav.
-     — JetBrains Mono (monoespaçada) para rótulos, etiquetas de status e
-       metadados — como se fossem carimbos de uma ficha catalográfica.
-   ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
