@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ${iconeHtml}
                 <div class="item-info">${linhasHtml}</div>
                 <div class="item-acoes-cadastro">
-                    <button type="button" class="btn-editar-cadastro" title="Editar">✏️</button>
-                    <button type="button" class="btn-deletar" title="Excluir">✕</button>
+                    <button type="button" class="btn-editar-cadastro" title="Editar"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-editar"></use></svg></button>
+                    <button type="button" class="btn-deletar" title="Excluir"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-excluir"></use></svg></button>
                 </div>
             `;
             div.querySelector('.btn-editar-cadastro').onclick = () => {
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const urlAtual = item?.[campo.key] ? urlPublicaMidia(item[campo.key]) : null;
                 preview.innerHTML = urlAtual
                     ? `<img src="${urlAtual}" alt="Ícone atual">`
-                    : '<span class="preview-icone-vazio">📚</span>';
+                    : `<span class="preview-icone-vazio"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-${abaAtual}"></use></svg></span>`;
 
                 const input = document.createElement('input');
                 input.type = 'file';

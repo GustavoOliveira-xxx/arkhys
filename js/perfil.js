@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (erroUpload) {
             alert('Erro ao enviar a foto: ' + erroUpload.message);
             btnAlterarFoto.disabled = false;
-            btnAlterarFoto.textContent = '📷 Alterar foto';
+            btnAlterarFoto.innerHTML = '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-camera"></use></svg> Alterar foto';
             return;
         }
 
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderizarAvatar();
         inputFotoPerfil.value = '';
         btnAlterarFoto.disabled = false;
-        btnAlterarFoto.textContent = '📷 Alterar foto';
+        btnAlterarFoto.innerHTML = '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-camera"></use></svg> Alterar foto';
         await verificarPerfilCompleto();
     });
 
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (erroUpdate) {
             alert('Erro ao remover a foto: ' + erroUpdate.message);
             btnRemoverFoto.disabled = false;
-            btnRemoverFoto.textContent = '🗑️ Remover foto';
+            btnRemoverFoto.innerHTML = '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-excluir"></use></svg> Remover foto';
             return;
         }
 
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         perfil = { ...perfil, foto_url: null };
         renderizarAvatar();
         btnRemoverFoto.disabled = false;
-        btnRemoverFoto.textContent = '🗑️ Remover foto';
+        btnRemoverFoto.innerHTML = '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-excluir"></use></svg> Remover foto';
     });
 
     // Salvar alterações (nome)

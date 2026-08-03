@@ -4,7 +4,7 @@
 // existe um elemento fixo no HTML de cada página).
 // ==================================================
 import { supabase } from './supabase-config.js';
-import { urlPublicaMidia, ehImagem, iconePorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
+import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
 import { listarAnexosDaTarefa } from './arquivos-service.js';
 
 let overlayAtual = null;
@@ -31,7 +31,7 @@ function calcularStatus(tarefa) {
     return { classe: 'proximo', texto: 'Em breve' };
 }
 
-const EMOJI_DIFICULDADE = { facil: '🟢', medio: '🟡', dificil: '🔴' };
+const ICONE_DIFICULDADE = { facil: 'dificuldade-facil', medio: 'dificuldade-medio', dificil: 'dificuldade-dificil' };
 const NOME_DIFICULDADE_LOCAL = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' };
 
 // Monta a GALERIA de anexos (pode ter quantos anexos a tarefa tiver):
@@ -51,19 +51,19 @@ async function montarGaleriaAnexos(anexos) {
         if (ehImagem(nomeArquivo)) {
             return `<div class="detalhe-anexo-card" data-acao="ver-anexo" data-url="${url}" data-nome="${nomeArquivo}">
                 <img src="${url}" alt="${nomeArquivo}" loading="lazy">
-                <div class="detalhe-anexo-card-legenda">🖼️ ${nomeArquivo}</div>
+                <div class="detalhe-anexo-card-legenda"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-imagem"></use></svg> ${nomeArquivo}</div>
             </div>`;
         }
 
         if (extensaoDoArquivo(nomeArquivo) === 'pdf') {
             return `<div class="detalhe-anexo-card detalhe-anexo-pdf-card" data-acao="ver-anexo" data-url="${url}" data-nome="${nomeArquivo}">
-                <div class="detalhe-anexo-card-icone">📕</div>
+                <div class="detalhe-anexo-card-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-pdf"></use></svg></div>
                 <div class="detalhe-anexo-card-legenda">${nomeArquivo}</div>
             </div>`;
         }
 
         return `<div class="detalhe-anexo-card" data-acao="ver-anexo" data-url="${url}" data-nome="${nomeArquivo}">
-            <div class="detalhe-anexo-card-icone">${iconePorTipo(nomeArquivo)}</div>
+            <div class="detalhe-anexo-card-icone">${iconeSvgPorTipo(nomeArquivo)}</div>
             <div class="detalhe-anexo-card-legenda">${rotuloPorTipo(nomeArquivo)} — ${nomeArquivo}</div>
         </div>`;
     }).join('');
@@ -122,12 +122,12 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     const materia = materias.find(m => m.id === tarefa.materia_id);
     const st = calcularStatus(tarefa);
     const modalidadeTexto = tarefa.modalidade === 'grupo'
-        ? `👥 Em grupo (${(tarefa.membros_ids || []).length} membro(s))`
-        : '👤 Individual';
+        ? `<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-membros"></use></svg> Em grupo (${(tarefa.membros_ids || []).length} membro(s))`
+        : '<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-individual"></use></svg> Individual';
 
     const iconeMateria = materia?.icone_url
         ? `<img src="${urlPublicaMidia(materia.icone_url)}" alt="${materia.nome}">`
-        : '📝';
+        : '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg>';
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -137,9 +137,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
             <div class="cabecalho-modal">
                 <h3>Saiba mais</h3>
                 <div class="cabecalho-modal-acoes">
-                    <button type="button" class="btn-acao" data-acao="compartilhar" title="Compartilhar">🔗</button>
-                    <button type="button" class="btn-acao" data-acao="imprimir" title="Imprimir / salvar em PDF">🖨️</button>
-                    <button type="button" class="btn-acao" data-acao="fechar" title="Fechar">✕</button>
+                    <button type="button" class="btn-acao" data-acao="compartilhar" title="Compartilhar"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-compartilhar"></use></svg></button>
+                    <button type="button" class="btn-acao" data-acao="imprimir" title="Imprimir / salvar em PDF"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-imprimir"></use></svg></button>
+                    <button type="button" class="btn-acao" data-acao="fechar" title="Fechar"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>
                 </div>
             </div>
 
@@ -161,7 +161,7 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                 </div>
                 <div class="detalhe-linha">
                     <span class="detalhe-rotulo">Dificuldade</span>
-                    <span class="detalhe-valor">${EMOJI_DIFICULDADE[tarefa.dificuldade] || '🟡'} ${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span>
+                    <span class="detalhe-valor"><svg class="icon-svg icon-svg-sm icon-${ICONE_DIFICULDADE[tarefa.dificuldade] || 'dificuldade-medio'}"><use href="assets/icones/arkhys-icons.svg#icon-${ICONE_DIFICULDADE[tarefa.dificuldade] || 'dificuldade-medio'}"></use></svg> ${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span>
                 </div>
                 <div class="detalhe-linha">
                     <span class="detalhe-rotulo">Modalidade</span>
@@ -177,9 +177,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
             </div>
 
             <div class="acoes-form">
-                ${(aoEditar || linkEditar) ? `<button type="button" class="botao botao-primario w-full" data-acao="editar">✏️ Editar</button>` : ''}
-                ${aoConcluir ? `<button type="button" class="botao botao-secundario w-full" data-acao="concluir">${tarefa.concluida ? '↺ Reabrir' : '✓ Concluir'}</button>` : ''}
-                ${aoExcluir ? `<button type="button" class="botao botao-perigo w-full" data-acao="excluir">🗑️ Excluir</button>` : ''}
+                ${(aoEditar || linkEditar) ? `<button type="button" class="botao botao-primario w-full" data-acao="editar"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-editar"></use></svg> Editar</button>` : ''}
+                ${aoConcluir ? `<button type="button" class="botao botao-secundario w-full" data-acao="concluir">${tarefa.concluida ? '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-reabrir"></use></svg> Reabrir' : '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-concluir"></use></svg> Concluir'}</button>` : ''}
+                ${aoExcluir ? `<button type="button" class="botao botao-perigo w-full" data-acao="excluir"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-excluir"></use></svg> Excluir</button>` : ''}
             </div>
         </div>
     `;

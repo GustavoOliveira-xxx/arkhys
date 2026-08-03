@@ -307,14 +307,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const blocosExistentes = existentesVisiveis.map(a => `
             <div class="item-anexo-form">
                 <span>${iconePorTipo(a.nome_arquivo)} ${a.nome_arquivo}</span>
-                <button type="button" class="btn-remover-anexo" data-acao="remover-existente" data-id="${a.id}" title="Remover">✕</button>
+                <button type="button" class="btn-remover-anexo" data-acao="remover-existente" data-id="${a.id}" title="Remover"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>
             </div>
         `);
 
         const blocosNovos = anexosNovos.map((arquivo, indice) => `
             <div class="item-anexo-form item-anexo-novo">
-                <span>📎 ${arquivo.name} <em>(novo)</em></span>
-                <button type="button" class="btn-remover-anexo" data-acao="remover-novo" data-indice="${indice}" title="Remover">✕</button>
+                <span><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-anexo"></use></svg> ${arquivo.name} <em>(novo)</em></span>
+                <button type="button" class="btn-remover-anexo" data-acao="remover-novo" data-indice="${indice}" title="Remover"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>
             </div>
         `);
 

@@ -60,6 +60,18 @@ export function rotuloPorTipo(nomeArquivo = '', tipoMime = '') {
     return 'Arquivo';
 }
 
+// Ícone SVG do tipo de arquivo (usado nos modais, no lugar do emoji de iconePorTipo)
+export function iconeSvgPorTipo(nomeArquivo = '', tipoMime = '') {
+    if (ehImagem(nomeArquivo, tipoMime)) return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-imagem"></use></svg>';
+    const ext = extensaoDoArquivo(nomeArquivo);
+    if (ext === 'pdf') return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-pdf"></use></svg>';
+    if (['doc', 'docx'].includes(ext)) return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-documento"></use></svg>';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-planilha"></use></svg>';
+    if (['ppt', 'pptx'].includes(ext)) return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-apresentacao"></use></svg>';
+    if (['zip', 'rar', '7z'].includes(ext)) return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-zip"></use></svg>';
+    return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-anexo"></use></svg>';
+}
+
 // Retorna a nome de exibição de um caminho de storage, removendo o
 // prefixo "timestamp_" usado para evitar colisão de nomes
 export function nomeExibicao(caminhoOuNome = '') {
@@ -114,7 +126,7 @@ function montarOverlayVisualizador(conteudoInterno, classeExtra = '') {
     const lightbox = document.createElement('div');
     lightbox.id = 'lightboxAnexo';
     lightbox.className = `lightbox-overlay ${classeExtra}`.trim();
-    lightbox.innerHTML = `${conteudoInterno}<button type="button" class="btn-acao lightbox-fechar" title="Fechar">✕</button>`;
+    lightbox.innerHTML = `${conteudoInterno}<button type="button" class="btn-acao lightbox-fechar" title="Fechar"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>`;
 
     lightbox.addEventListener('click', (e) => {
         if (e.target === lightbox || e.target.classList.contains('lightbox-fechar')) lightbox.remove();
@@ -138,10 +150,10 @@ export function abrirVisualizadorPdf(url, nome = '') {
         <div class="lightbox-pdf-caixa">
             <iframe src="${url}#toolbar=1" title="${nome}"></iframe>
             <div class="detalhe-anexo-legenda">
-                <span>📕 ${nome}</span>
+                <span><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-pdf"></use></svg> ${nome}</span>
                 <div>
                     <a href="${url}" target="_blank" rel="noopener">Abrir em nova aba</a>
-                    <a href="${url}" download="${nome}">⬇️ Baixar</a>
+                    <a href="${url}" download="${nome}"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-download"></use></svg> Baixar</a>
                 </div>
             </div>
         </div>
