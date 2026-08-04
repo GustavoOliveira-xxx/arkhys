@@ -128,8 +128,10 @@ function montarOverlayVisualizador(conteudoInterno, classeExtra = '') {
     lightbox.className = `lightbox-overlay ${classeExtra}`.trim();
     lightbox.innerHTML = `${conteudoInterno}<button type="button" class="btn-acao lightbox-fechar" title="Fechar"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>`;
 
+    // closest() é essencial: o clique quase sempre cai no <svg>/<use> DENTRO
+    // do botão X, e não no botão em si — com classList.contains o X não fechava.
     lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.classList.contains('lightbox-fechar')) lightbox.remove();
+        if (e.target === lightbox || e.target.closest('.lightbox-fechar')) lightbox.remove();
     });
     document.addEventListener('keydown', function aoEsc(e) {
         if (e.key === 'Escape') { lightbox.remove(); document.removeEventListener('keydown', aoEsc); }

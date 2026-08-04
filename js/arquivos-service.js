@@ -168,3 +168,32 @@ export async function mapaAnexosPorTarefa(tarefaIds = []) {
     });
     return mapa;
 }
+// Renomeia um arquivo do Cofre. O caminho no Storage continua o mesmo
+// (chave imutável e segura); o que muda é o nome de exibição — que também
+// é o nome usado ao baixar/salvar o arquivo.
+export async function renomearArquivo(usuarioId, arquivoId, novoNome) {
+    const nome = (novoNome || '').trim();
+    if (!nome) return { error: { message: 'Informe um nome válido.' } };
+
+    const { data: registro, error } = await supabase
+        .from('arquivos')
+        .update({ nome_arquivo: nome })
+        .eq('id', arquivoId)
+        .eq('usuario_id', usuarioId)
+        .select()
+        .single();
+
+    if (error) return { error };
+
+    // Mantém o nome do anexo sincronizado na tarefa vinculada, quando houver
+    if (registro?.referencia_tarefa_id) {
+        await supabase
+            .from('tarefas')
+            .update({ anexo_nome: nome })
+            .eq('id', registro.referencia_tarefa_id)
+            .eq('usuario_id', usuarioId)
+            .eq('anexo_path', registro.url_arquivo);
+    }
+
+    return { data: registro };
+}

@@ -5,6 +5,7 @@
 // ==================================================
 import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
+import { celebrarConclusao } from './celebracao.js';
 import { listarAnexosDaTarefa, listarEntregasDaTarefa, listarTiposEntrega, enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
 
 let overlayAtual = null;
@@ -312,6 +313,7 @@ async function renderizarEntregas(overlay, tarefa) {
                 });
                 input.disabled = false;
                 if (error) { alert('Erro ao enviar entrega: ' + error.message); return; }
+                celebrarConclusao({ texto: 'Entrega enviada', titulo: arquivo.name });
                 desenhar();
             });
         });
@@ -370,6 +372,19 @@ async function compartilharTarefa(tarefa, materia) {
 // IMPRIMIR — abre uma janela com um resumo bonito e
 // chama a impressão (o usuário pode escolher "Salvar como PDF")
 // ==================================================
+// Nome sugerido pelo navegador ao "Salvar como PDF" no computador:
+// MATÉRIA + DATA DE ENTREGA (DD/MM/AA) + Arkhys
+function nomeArquivoImpressao(tarefa, materia) {
+    const nomeMateria = (materia?.nome || 'Sem matéria').trim();
+    let dataCurta = 'sem-data';
+    if (tarefa.data_entrega) {
+        const d = new Date(tarefa.data_entrega + 'T00:00:00');
+        dataCurta = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear()).slice(-2)}`;
+    }
+    // "/" viraria pasta no nome do arquivo, então a data usa "-"
+    return `${nomeMateria} ${dataCurta} Arkhys`;
+}
+
 async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
     const st = calcularStatus(tarefa);
     const nomesMembros = tarefa.modalidade === 'grupo'
@@ -421,7 +436,7 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>${tarefa.titulo} — Arkhys</title>
+            <title>${nomeArquivoImpressao(tarefa, materia)}</title>
             <style>
                 * { box-sizing: border-box; }
                 body { font-family: 'Georgia', serif; color: #1a1a1a; max-width: 720px; margin: 40px auto; padding: 0 24px; line-height: 1.6; }

@@ -77,6 +77,14 @@
             <button type="button" class="aba-tarefa" data-filtro="anexos"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-anexo"></use></svg> Anexos e arquivos</button>
         </div>
 
+        <div class="barra-busca-cofre">
+            <span class="barra-busca-icone" aria-hidden="true">🔍</span>
+            <input type="search" id="buscaArquivos" class="campo-entrada" placeholder="Pesquisar anexos pelo nome..." autocomplete="off">
+            <button type="button" id="limparBusca" class="btn-acao" title="Limpar busca" hidden>
+                <svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg>
+            </button>
+        </div>
+
         <div class="lista-itens" id="listaArquivos"></div>
     </main>
 

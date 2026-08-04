@@ -2,6 +2,7 @@ import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { mapaAnexosPorTarefa } from './arquivos-service.js';
+import { celebrarConclusao } from './celebracao.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Verifica se está logado
@@ -148,9 +149,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function alternarConclusao(id, estadoAtual) {
+        const novoEstado = !estadoAtual;
         const { error } = await supabase
             .from('tarefas')
-            .update({ concluida: !estadoAtual })
+            .update({ concluida: novoEstado })
             .eq('id', id)
             .eq('usuario_id', user.id);
 
@@ -158,6 +160,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('❌ Erro ao atualizar tarefa: ' + error.message);
             return;
         }
+
+        if (novoEstado) {
+            const tarefa = tarefasDoDia.find(t => String(t.id) === String(id));
+            celebrarConclusao({ titulo: tarefa?.titulo || '' });
+        }
+
         carregarHoje();
     }
 

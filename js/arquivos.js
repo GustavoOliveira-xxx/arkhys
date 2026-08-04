@@ -1,6 +1,6 @@
 import { supabase } from './supabase-config.js';
 import { iconePorTipo, ehImagem, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
-import { enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
+import { enviarERegistrarArquivo, removerArquivoPorCaminho, renomearArquivo } from './arquivos-service.js';
 import { concederXp } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -14,8 +14,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputArquivo = document.getElementById('inputArquivo');
     const lista = document.getElementById('listaArquivos');
     const abasArquivos = document.getElementById('abasArquivos');
+    const campoBusca = document.getElementById('buscaArquivos');
+    const limparBusca = document.getElementById('limparBusca');
 
     let filtroAtivo = 'todos'; // 'todos' | 'entregas' | 'anexos'
+    let termoBusca = '';
+    let arquivos = [];
+
+    // --- Fixados (por usuário, guardados localmente) ---
+    const CHAVE_FIXADOS = `arkhys:cofre:fixados:${user.id}`;
+
+    function lerFixados() {
+        try {
+            return new Set(JSON.parse(localStorage.getItem(CHAVE_FIXADOS) || '[]'));
+        } catch {
+            return new Set();
+        }
+    }
+
+    function salvarFixados(conjunto) {
+        localStorage.setItem(CHAVE_FIXADOS, JSON.stringify([...conjunto]));
+    }
+
+    function alternarFixado(id) {
+        const fixados = lerFixados();
+        fixados.has(id) ? fixados.delete(id) : fixados.add(id);
+        salvarFixados(fixados);
+    }
 
     abasArquivos?.addEventListener('click', (e) => {
         const aba = e.target.closest('.aba-tarefa');
@@ -25,11 +50,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         carregarArquivos();
     });
 
+    // Busca (filtra em memória, sem recarregar do servidor)
+    campoBusca?.addEventListener('input', () => {
+        termoBusca = campoBusca.value.trim().toLowerCase();
+        if (limparBusca) limparBusca.hidden = termoBusca.length === 0;
+        desenharLista();
+    });
+
+    limparBusca?.addEventListener('click', () => {
+        campoBusca.value = '';
+        termoBusca = '';
+        limparBusca.hidden = true;
+        desenharLista();
+        campoBusca.focus();
+    });
+
     // Abre seletor de arquivos
     btnEnviar.addEventListener('click', () => inputArquivo.click());
 
-    // Faz upload — envia para o storage e registra na tabela `arquivos`,
-    // que é a mesma tabela usada pelos anexos das tarefas.
     inputArquivo.addEventListener('change', async (e) => {
         const arquivo = e.target.files[0];
         if (!arquivo) return;
@@ -52,8 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Carrega lista a partir da tabela `arquivos` (inclui os anexos lançados
-    // automaticamente pelas tarefas cadastradas)
+    // Carrega lista a partir da tabela `arquivos`
     async function carregarArquivos() {
         lista.innerHTML = '<div class="item-vazio">Carregando...</div>';
 
@@ -73,33 +110,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        if (!data || data.length === 0) {
-            lista.innerHTML = `<div class="item-vazio">${filtroAtivo === 'entregas' ? 'Nenhuma entrega enviada ainda 📤' : 'Nenhum arquivo salvo ainda 📁'}</div>`;
+        arquivos = data || [];
+
+        // Prévia (miniatura) das imagens, buscada em lote — o bucket é privado
+        const caminhosImagem = arquivos.filter(a => ehImagem(a.nome_arquivo)).map(a => a.url_arquivo);
+        arquivos.previas = await urlsAssinadasEmLote(caminhosImagem);
+
+        desenharLista();
+    }
+
+    function descreverOrigem(arq) {
+        const nomeTarefa = arq.tarefas?.titulo ? ': ' + arq.tarefas.titulo : '';
+        if (arq.eh_entrega) {
+            return `📤 Entrega${arq.tipos_entrega?.nome ? ' (' + arq.tipos_entrega.nome + ')' : ''}${nomeTarefa}`;
+        }
+        return arq.referencia_tarefa_id ? `📎 Anexo de tarefa${nomeTarefa}` : (arq.categoria || 'Geral');
+    }
+
+    function desenharLista() {
+        const fixados = lerFixados();
+
+        let itens = arquivos.filter(arq => {
+            if (!termoBusca) return true;
+            const alvo = `${arq.nome_arquivo} ${descreverOrigem(arq)}`.toLowerCase();
+            return alvo.includes(termoBusca);
+        });
+
+        // Fixados sempre primeiro, mantendo a ordem de data dentro de cada grupo
+        itens = [
+            ...itens.filter(a => fixados.has(a.id)),
+            ...itens.filter(a => !fixados.has(a.id))
+        ];
+
+        if (itens.length === 0) {
+            const vazio = termoBusca
+                ? `Nenhum anexo encontrado para “${campoBusca.value.trim()}” 🔍`
+                : (filtroAtivo === 'entregas' ? 'Nenhuma entrega enviada ainda 📤' : 'Nenhum arquivo salvo ainda 📁');
+            lista.innerHTML = `<div class="item-vazio">${vazio}</div>`;
             return;
         }
 
-        // Prévia (miniatura) das imagens, buscada em lote — o bucket é privado
-        const caminhosImagem = data.filter(a => ehImagem(a.nome_arquivo)).map(a => a.url_arquivo);
-        const urlsPrevia = await urlsAssinadasEmLote(caminhosImagem);
+        const previas = arquivos.previas || {};
 
-        lista.innerHTML = data.map(arq => {
-            const previa = urlsPrevia[arq.url_arquivo];
+        lista.innerHTML = itens.map(arq => {
+            const previa = previas[arq.url_arquivo];
             const icone = previa ? `<img src="${previa}" alt="">` : iconePorTipo(arq.nome_arquivo);
-            const nomeTarefa = arq.tarefas?.titulo ? ': ' + arq.tarefas.titulo : '';
-            const origem = arq.eh_entrega
-                ? `📤 Entrega${arq.tipos_entrega?.nome ? ' (' + arq.tipos_entrega.nome + ')' : ''}${nomeTarefa}`
-                : (arq.referencia_tarefa_id
-                    ? `📎 Anexo de tarefa${nomeTarefa}`
-                    : (arq.categoria || 'Geral'));
+            const fixado = fixados.has(arq.id);
 
             return `
-                <div class="item-tarefa" data-id="${arq.id}" data-caminho="${arq.url_arquivo}" data-nome="${arq.nome_arquivo}">
+                <div class="item-tarefa ${fixado ? 'item-fixado' : ''}" data-id="${arq.id}" data-caminho="${arq.url_arquivo}" data-nome="${arq.nome_arquivo}">
                     <div class="item-icone ${previa ? 'com-imagem' : ''}">${icone}</div>
                     <div class="item-conteudo">
-                        <h4>${arq.nome_arquivo}</h4>
-                        <p>${origem} • ${new Date(arq.created_at).toLocaleDateString('pt-BR')}</p>
+                        <h4>${fixado ? '<span class="marca-fixado" title="Fixado">📌</span> ' : ''}${arq.nome_arquivo}</h4>
+                        <p>${descreverOrigem(arq)} • ${new Date(arq.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div class="item-acoes">
+                        <button class="btn-acao fixar ${fixado ? 'ativo' : ''}" title="${fixado ? 'Desafixar' : 'Fixar'}">📌</button>
+                        <button class="btn-acao renomear" title="Renomear">✏️</button>
+                        <button class="btn-acao baixar" title="Baixar">⬇️</button>
                         <button class="btn-acao abrir" title="Abrir">👁</button>
                         <button class="btn-acao excluir" title="Excluir">🗑️</button>
                     </div>
@@ -108,12 +176,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
     }
 
+    // Baixa o arquivo já com o nome salvo (renomeado ou não)
+    async function baixarArquivo(caminho, nome) {
+        const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 10, { download: nome });
+        if (error) {
+            alert('Erro ao baixar arquivo: ' + error.message);
+            return;
+        }
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = nome;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    }
+
     // Ações
     lista.addEventListener('click', async (e) => {
         const item = e.target.closest('.item-tarefa');
         if (!item) return;
         const caminho = item.dataset.caminho;
+        const id = item.dataset.id;
+        const nome = item.dataset.nome;
+
+        if (e.target.closest('.fixar')) {
+            alternarFixado(id);
+            desenharLista();
+            return;
+        }
+
+        if (e.target.closest('.renomear')) {
+            const novoNome = prompt('Novo nome do anexo (com a extensão):', nome);
+            if (novoNome === null) return;
+            const limpo = novoNome.trim();
+            if (!limpo || limpo === nome) return;
+
+            const { error } = await renomearArquivo(user.id, id, limpo);
+            if (error) {
+                alert('Erro ao renomear: ' + error.message);
+                return;
+            }
+            const alvo = arquivos.find(a => String(a.id) === String(id));
+            if (alvo) alvo.nome_arquivo = limpo;
+            desenharLista();
+            return;
+        }
+
         if (!caminho) return;
+
+        if (e.target.closest('.baixar')) {
+            await baixarArquivo(caminho, nome);
+            return;
+        }
 
         if (e.target.closest('.abrir')) {
             const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 30);
@@ -121,12 +235,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Erro ao abrir arquivo: ' + error.message);
                 return;
             }
-            abrirVisualizadorArquivo(data.signedUrl, item.dataset.nome);
+            abrirVisualizadorArquivo(data.signedUrl, nome);
+            return;
         }
 
         if (e.target.closest('.excluir')) {
             if (!confirm('Excluir esse arquivo permanentemente? Se ele estiver anexado a uma tarefa, o anexo também será removido de lá.')) return;
             await removerArquivoPorCaminho(user.id, caminho);
+            const fixados = lerFixados();
+            fixados.delete(id);
+            salvarFixados(fixados);
             carregarArquivos();
         }
     });

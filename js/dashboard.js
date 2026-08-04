@@ -2,6 +2,7 @@ import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { mapaAnexosPorTarefa } from './arquivos-service.js';
+import { celebrarConclusao } from './celebracao.js';
 import { concederXpDoDia, concederXpDiaPerfeito, concederXpConclusaoTarefa, buscarNiveis, calcularProgresso } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -122,6 +123,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) { alert('Erro ao atualizar: ' + error.message); return; }
 
         if (novoEstado) {
+            await celebrarConclusao({ titulo: tarefa.titulo });
+
             await concederXpConclusaoTarefa(tarefa);
 
             const tarefasHojeAtualizadas = tarefas.filter(t => t.data_entrega === hoje).map(t => t.id === tarefa.id ? { ...t, concluida: true } : t);

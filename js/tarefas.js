@@ -2,6 +2,7 @@ import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { enviarERegistrarArquivo, removerArquivoPorCaminho, listarAnexosDaTarefa, mapaAnexosPorTarefa } from './arquivos-service.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
+import { celebrarConclusao } from './celebracao.js';
 import { concederXpDiaPerfeito, concederXpConclusaoTarefa, NOME_DIFICULDADE } from './xp-service.js';
 import { mostrarCarregamento, esconderCarregamento } from './loading.js';
 
@@ -481,6 +482,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Concluiu agora: concede XP com trava anti-farm (tempo mínimo desde
         // a criação + limite de ritmo). Nunca concede XP ao criar/editar/anexar.
         if (novoEstado) {
+            celebrarConclusao({ titulo: tarefa.titulo });
+
             await concederXpConclusaoTarefa(tarefa);
 
             const hoje = new Date().toISOString().split('T')[0];
