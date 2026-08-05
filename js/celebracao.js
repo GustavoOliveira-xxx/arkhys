@@ -1,18 +1,5 @@
-// ==================================================
-// CELEBRAÇÃO DE CONCLUSÃO — animação temática Arkhys
-// Mostrada sempre que uma atividade é concluída/entregue.
-// ==================================================
-
 let overlayCelebracao = null;
 
-/**
- * Exibe a animação "Tarefa concluída" com a identidade do Arkhys.
- * @param {object} opcoes
- * @param {string} [opcoes.titulo] - título da tarefa concluída
- * @param {string} [opcoes.texto] - texto principal (padrão: "Tarefa concluída")
- * @param {number} [opcoes.duracao] - duração em ms
- * @returns {Promise<void>} resolve quando a animação termina
- */
 export function celebrarConclusao({ titulo = '', texto = 'Tarefa concluída', duracao = 1900 } = {}) {
     return new Promise(resolve => {
         overlayCelebracao?.remove();
@@ -40,7 +27,6 @@ export function celebrarConclusao({ titulo = '', texto = 'Tarefa concluída', du
             </div>
         `;
 
-        // textContent evita que nomes de arquivo/tarefa com < > quebrem o HTML
         overlay.querySelector('.celebracao-texto').textContent = texto;
         if (titulo) overlay.querySelector('.celebracao-subtexto').textContent = titulo;
 

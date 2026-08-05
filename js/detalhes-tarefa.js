@@ -1,8 +1,3 @@
-// ==================================================
-// MODAL "SAIBA MAIS" — generalizado, usado em Início,
-// Hoje e Tarefas. Cria o overlay dinamicamente (não
-// existe um elemento fixo no HTML de cada página).
-// ==================================================
 import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
 import { celebrarConclusao } from './celebracao.js';
@@ -10,7 +5,6 @@ import { listarAnexosDaTarefa, listarEntregasDaTarefa, listarTiposEntrega, envia
 
 let overlayAtual = null;
 
-// Fecha e remove o modal de detalhes, se estiver aberto
 export function fecharDetalhes() {
     if (overlayAtual) {
         overlayAtual.remove();
@@ -32,13 +26,42 @@ function calcularStatus(tarefa) {
     return { classe: 'proximo', texto: 'Em breve' };
 }
 
+function passosDaTarefa(tarefa) {
+    const lista = Array.isArray(tarefa.subtarefas) ? tarefa.subtarefas : [];
+    return lista.filter(passo => passo && passo.texto);
+}
+
+function montarChecklist(tarefa, interativo) {
+    const passos = passosDaTarefa(tarefa);
+    if (!passos.length) return '';
+
+    const feitos = passos.filter(passo => passo.feita).length;
+    const porcentagem = Math.round((feitos / passos.length) * 100);
+
+    const itens = passos.map(passo => `
+        <li class="passo-detalhe ${passo.feita ? 'passo-detalhe-feito' : ''}">
+            <button type="button" class="passo-marcador" data-acao="alternar-passo" data-passo="${passo.id}" ${interativo ? '' : 'disabled'} aria-pressed="${passo.feita}">
+                <svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-${passo.feita ? 'concluido' : 'concluir'}"></use></svg>
+            </button>
+            <span>${passo.texto}</span>
+        </li>
+    `).join('');
+
+    return `
+        <div class="detalhe-secao" data-secao="passos">
+            <div class="detalhe-passos-topo">
+                <span class="detalhe-rotulo">Passos</span>
+                <span class="metadado">${feitos} de ${passos.length} concluídos</span>
+            </div>
+            <div class="progresso-passos-trilha progresso-passos-trilha-grande"><span style="width: ${porcentagem}%"></span></div>
+            <ul class="lista-passos-detalhe">${itens}</ul>
+        </div>
+    `;
+}
+
 const ICONE_DIFICULDADE = { facil: 'dificuldade-facil', medio: 'dificuldade-medio', dificil: 'dificuldade-dificil' };
 const NOME_DIFICULDADE_LOCAL = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' };
 
-// Monta a GALERIA de anexos (pode ter quantos anexos a tarefa tiver):
-// imagens em miniatura, cartão de PDF, ou cartão com ícone pros demais
-// tipos — cada cartão abre o visualizador certo (mesma experiência do
-// Cofre de Arquivos) ao ser clicado.
 async function montarGaleriaAnexos(anexos) {
     if (!anexos.length) return '';
 
@@ -70,7 +93,6 @@ async function montarGaleriaAnexos(anexos) {
     }).join('');
 }
 
-// Monta a linha de membros como LISTA (não mais texto separado por vírgula)
 function montarLinhaMembros(tarefa, membros = []) {
     if (tarefa.modalidade !== 'grupo' || !(tarefa.membros_ids || []).length) return '';
 
@@ -86,7 +108,6 @@ function montarLinhaMembros(tarefa, membros = []) {
     </div>`;
 }
 
-// Monta a linha de ferramentas como LISTA (não mais texto separado por vírgula)
 function montarLinhaFerramentas(tarefa, ferramentas = []) {
     if (!(tarefa.ferramentas_ids || []).length) return '';
 
@@ -102,21 +123,8 @@ function montarLinhaFerramentas(tarefa, ferramentas = []) {
     </div>`;
 }
 
-/**
- * Abre o modal "Saiba mais" de uma tarefa.
- *
- * @param {object} tarefa - registro da tabela `tarefas`
- * @param {object} opcoes
- * @param {Array} [opcoes.materias] - lista de matérias do usuário
- * @param {Array} [opcoes.membros] - lista de membros do usuário
- * @param {Array} [opcoes.ferramentas] - lista de ferramentas do usuário
- * @param {Function} [opcoes.aoEditar] - chamada ao clicar em "Editar" (recebe a tarefa)
- * @param {string} [opcoes.linkEditar] - alternativa a aoEditar: navega para essa URL
- * @param {Function} [opcoes.aoConcluir] - chamada ao clicar em "Concluir/Reabrir"
- * @param {Function} [opcoes.aoExcluir] - chamada ao clicar em "Excluir"
- */
 export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
-    const { materias = [], membros = [], ferramentas = [], aoEditar, linkEditar, aoConcluir, aoExcluir } = opcoes;
+    const { materias = [], membros = [], ferramentas = [], aoEditar, linkEditar, aoConcluir, aoExcluir, aoAlternarPasso } = opcoes;
 
     fecharDetalhes();
 
@@ -172,6 +180,8 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                 ${montarLinhaFerramentas(tarefa, ferramentas)}
             </div>
 
+            ${montarChecklist(tarefa, !!aoAlternarPasso)}
+
             <div class="detalhe-secao" data-secao="entregas" hidden>
                 <span class="detalhe-rotulo">Entregas</span>
                 <div data-slot="entregas">Carregando entregas...</div>
@@ -193,14 +203,12 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     document.body.appendChild(overlay);
     overlayAtual = overlay;
 
-    // Fechar: no X, clicando fora do cartão, ou tecla Esc
     overlay.querySelector('[data-acao="fechar"]').addEventListener('click', fecharDetalhes);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) fecharDetalhes(); });
     document.addEventListener('keydown', function aoEsc(e) {
         if (e.key === 'Escape') { fecharDetalhes(); document.removeEventListener('keydown', aoEsc); }
     });
 
-    // Ações
     const botaoEditar = overlay.querySelector('[data-acao="editar"]');
     if (botaoEditar) {
         botaoEditar.addEventListener('click', () => {
@@ -219,13 +227,33 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
         botaoExcluir.addEventListener('click', () => aoExcluir(tarefa));
     }
 
+    function ligarBotoesPasso() {
+        if (!aoAlternarPasso) return;
+        overlay.querySelectorAll('[data-acao="alternar-passo"]').forEach(botao => {
+            botao.addEventListener('click', async () => {
+                botao.disabled = true;
+                const atualizados = await aoAlternarPasso(tarefa, botao.dataset.passo);
+                botao.disabled = false;
+                if (!atualizados) return;
+
+                const secao = overlay.querySelector('[data-secao="passos"]');
+                if (!secao) return;
+
+                const novaSecao = document.createElement('div');
+                novaSecao.innerHTML = montarChecklist({ ...tarefa, subtarefas: atualizados }, true);
+                secao.replaceWith(novaSecao.firstElementChild);
+                ligarBotoesPasso();
+            });
+        });
+    }
+
+    ligarBotoesPasso();
+
     overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
     overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas));
 
-    // Espaços de entrega (um por tipo de entrega selecionado na tarefa)
     await renderizarEntregas(overlay, tarefa);
 
-    // Carrega os anexos de forma assíncrona (precisa de URLs assinadas)
     const secaoAnexos = overlay.querySelector('[data-secao="anexos"]');
     const slotAnexos = overlay.querySelector('[data-slot="anexos"]');
     const anexosTarefa = await listarAnexosDaTarefa(tarefa.id);
@@ -236,8 +264,6 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
         const grade = await montarGaleriaAnexos(anexosTarefa);
         if (slotAnexos) slotAnexos.outerHTML = `<div class="grade-anexos">${grade}</div>`;
 
-        // Clique em qualquer cartão abre o visualizador certo (mesma
-        // experiência de galeria usada no Cofre de Arquivos)
         overlay.querySelectorAll('[data-acao="ver-anexo"]').forEach(cartao => {
             cartao.addEventListener('click', () => {
                 abrirVisualizadorArquivo(cartao.dataset.url, cartao.dataset.nome);
@@ -246,12 +272,6 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     }
 }
 
-// ==================================================
-// ENTREGAS — um "espaço" de upload por tipo de entrega
-// selecionado na tarefa. Os arquivos vão para o mesmo bucket
-// privado `arquivos` (pasta entregas/) e são registrados na
-// tabela `arquivos` com eh_entrega = true + tipo_entrega_id.
-// ==================================================
 async function renderizarEntregas(overlay, tarefa) {
     const secao = overlay.querySelector('[data-secao="entregas"]');
     const slot = overlay.querySelector('[data-slot="entregas"]');
@@ -296,7 +316,6 @@ async function renderizarEntregas(overlay, tarefa) {
                 </div>`;
         }).join('')}</div>`;
 
-        // Enviar arquivo de entrega
         slot.querySelectorAll('[data-acao="upload-entrega"]').forEach(input => {
             input.addEventListener('change', async () => {
                 const arquivo = input.files[0];
@@ -318,7 +337,6 @@ async function renderizarEntregas(overlay, tarefa) {
             });
         });
 
-        // Abrir arquivo de entrega
         slot.querySelectorAll('[data-acao="abrir-entrega"]').forEach(botao => {
             botao.addEventListener('click', async () => {
                 const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(botao.dataset.caminho, 60 * 30);
@@ -327,7 +345,6 @@ async function renderizarEntregas(overlay, tarefa) {
             });
         });
 
-        // Remover arquivo de entrega
         slot.querySelectorAll('[data-acao="excluir-entrega"]').forEach(botao => {
             botao.addEventListener('click', async () => {
                 if (!confirm('Remover esse arquivo de entrega?')) return;
@@ -340,10 +357,6 @@ async function renderizarEntregas(overlay, tarefa) {
     await desenhar();
 }
 
-// ==================================================
-// COMPARTILHAR — Web Share API no celular, com fallback
-// de copiar um resumo em texto pra área de transferência
-// ==================================================
 async function compartilharTarefa(tarefa, materia) {
     const resumo = `📋 ${tarefa.titulo}\n` +
         `${materia ? `Matéria: ${materia.nome}\n` : ''}` +
@@ -368,12 +381,6 @@ async function compartilharTarefa(tarefa, materia) {
     }
 }
 
-// ==================================================
-// IMPRIMIR — abre uma janela com um resumo bonito e
-// chama a impressão (o usuário pode escolher "Salvar como PDF")
-// ==================================================
-// Nome sugerido pelo navegador ao "Salvar como PDF" no computador:
-// MATÉRIA + DATA DE ENTREGA (DD/MM/AA) + Arkhys
 function nomeArquivoImpressao(tarefa, materia) {
     const nomeMateria = (materia?.nome || 'Sem matéria').trim();
     let dataCurta = 'sem-data';
@@ -381,7 +388,7 @@ function nomeArquivoImpressao(tarefa, materia) {
         const d = new Date(tarefa.data_entrega + 'T00:00:00');
         dataCurta = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear()).slice(-2)}`;
     }
-    // "/" viraria pasta no nome do arquivo, então a data usa "-"
+
     return `${nomeMateria} ${dataCurta} Arkhys`;
 }
 
@@ -392,8 +399,6 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
         : [];
     const nomesFerramentas = (tarefa.ferramentas_ids || []).map(id => ferramentas.find(f => f.id === id)?.nome).filter(Boolean);
 
-    // Abre a janela ANTES de qualquer await, senão o navegador trata
-    // como popup não-solicitado e bloqueia.
     const janela = window.open('', '_blank', 'width=800,height=900');
     if (!janela) {
         alert('Seu navegador bloqueou a janela de impressão. Permita pop-ups para este site.');
@@ -401,8 +406,6 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
     }
     janela.document.write('<p style="font-family: sans-serif; padding: 40px;">Preparando impressão...</p>');
 
-    // Busca todos os anexos da tarefa pra embutir no impresso — cada
-    // foto aparece como imagem, cada PDF aparece como preview embutido
     const anexosTarefa = await listarAnexosDaTarefa(tarefa.id);
     let anexoHtml = '';
     if (anexosTarefa.length > 0) {
@@ -467,6 +470,7 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
             <div class="linha"><span class="rotulo">Modalidade</span><span>${tarefa.modalidade === 'grupo' ? 'Em grupo' : 'Individual'}</span></div>
             ${nomesMembros.length ? `<div class="linha"><span class="rotulo">Membros</span><ul>${nomesMembros.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
             ${nomesFerramentas.length ? `<div class="linha"><span class="rotulo">Ferramentas</span><ul>${nomesFerramentas.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
+            ${passosDaTarefa(tarefa).length ? `<div class="linha"><span class="rotulo">Passos</span><ul>${passosDaTarefa(tarefa).map(passo => `<li>${passo.feita ? '[x]' : '[ ]'} ${passo.texto}</li>`).join('')}</ul></div>` : ''}
             ${anexoHtml}
             <footer>Gerado por Arkhys — Organize · Evolua · Conquiste</footer>
         </body>

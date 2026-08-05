@@ -7,9 +7,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Sempre normalizado no dia 1 — evita o bug clássico de setMonth() em
-    // dias 29/30/31 (ex.: 31/08 -> setMonth(8) vira 01/10, pulando setembro
-    // e fazendo o mês seguinte aparecer misturado na grade).
     const agora = new Date();
     let dataAtual = new Date(agora.getFullYear(), agora.getMonth(), 1);
 
@@ -18,7 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnAnterior = document.getElementById('mesAnterior');
     const btnProximo = document.getElementById('proximoMes');
 
-    // Carrega todas as tarefas do usuário
     const { data: tarefas } = await supabase
         .from('tarefas')
         .select('data_entrega, titulo, concluida')
@@ -38,12 +34,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let html = '';
 
-        // Espaços vazios antes do dia 1 (só preenchimento, sem números de outro mês)
         for (let i = 0; i < primeiroDia; i++) {
             html += '<div class="dia-vazio" aria-hidden="true"></div>';
         }
 
-        // Dias do mês atual
         for (let dia = 1; dia <= ultimoDia; dia++) {
             const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
             const tarefasDia = tarefas?.filter(t => t.data_entrega === dataStr) || [];
@@ -58,7 +52,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }
 
-        // Espaços vazios até fechar a última semana (grade sempre alinhada)
         const totalCelulas = primeiroDia + ultimoDia;
         const restantes = (7 - (totalCelulas % 7)) % 7;
         for (let i = 0; i < restantes; i++) {

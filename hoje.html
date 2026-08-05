@@ -35,6 +35,10 @@
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-tarefas"></use></svg></span>
                     <span>Tarefas</span>
                 </a>
+                <a href="rotinas.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg></span>
+                    <span>Rotina</span>
+                </a>
                 <a href="cadastros.html" class="nav-item">
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-config"></use></svg></span>
                     <span>Cadastros</span>
@@ -66,6 +70,14 @@
         <div class="lista-itens" id="listaHoje"></div>
 
         <div class="tempo-total" id="tempoTotal"></div>
+
+        <section class="secao-rotina" id="secaoRotinaHoje" hidden>
+            <div class="titulo-secao-linha">
+                <h2 class="titulo-secao"><span class="marca-destaque"></span>Rotina de hoje</h2>
+                <a href="rotinas.html" class="btn-saiba-mais">Abrir diário de bordo</a>
+            </div>
+            <div class="lista-itens" id="listaRotinaHoje"></div>
+        </section>
     </main>
     <script src="js/ui.js"></script>
     <script type="module" src="js/hoje.js"></script>

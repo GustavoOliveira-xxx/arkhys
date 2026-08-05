@@ -16,21 +16,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnRemoverFoto = document.getElementById('btnRemoverFoto');
     const inputFotoPerfil = document.getElementById('inputFotoPerfil');
 
-    // Dados do usuário
     const nome = user.user_metadata?.nome_completo || 'Usuário';
     document.getElementById('nomePerfil').textContent = nome;
     document.getElementById('emailPerfil').textContent = user.email;
     document.getElementById('editarNome').value = nome;
     avatarIniciais.textContent = nome.trim().charAt(0).toUpperCase() || '?';
 
-    // Dados de nível, XP e foto (colunas corretas da tabela: xp_total / nivel_atual / foto_url)
     let { data: perfil } = await supabase
         .from('perfil')
         .select('nivel_atual, xp_total, foto_url, nome_completo')
         .eq('usuario_id', user.id)
         .maybeSingle();
 
-    // Segurança extra: se por algum motivo o perfil ainda não existir, cria um agora
     if (!perfil) {
         const { data: novoPerfil } = await supabase
             .from('perfil')
@@ -55,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('xpPerfil').textContent = `${perfil.xp_total} XP acumulado`;
         renderizarAvatar();
     }
-    // Atualiza os textos de XP/Nível na tela buscando os valores mais recentes do banco
+
     async function atualizarExibicaoXp() {
         const { data } = await supabase.from('perfil').select('xp_total, nivel_atual').eq('usuario_id', user.id).maybeSingle();
         if (!data) return;
@@ -64,7 +61,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('xpPerfil').textContent = `${data.xp_total} XP acumulado`;
     }
 
-    // Bônus único de "perfil completo": nome preenchido + foto anexada
     async function verificarPerfilCompleto() {
         if (perfil?.foto_url && (perfil?.nome_completo || nome)) {
             const resultado = await concederXp('perfil_completo', 'unico', 25);
@@ -73,9 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     await verificarPerfilCompleto();
 
-    // ==================================================
-    // FOTO DE PERFIL
-    // ==================================================
     btnAlterarFoto.addEventListener('click', () => inputFotoPerfil.click());
 
     inputFotoPerfil.addEventListener('change', async (e) => {
@@ -104,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .maybeSingle();
 
         if (!linhaAtualizada && !erroUpdate) {
-            // Não havia linha de perfil ainda — cria agora
+
             await supabase.from('perfil').insert({
                 usuario_id: user.id, nome_completo: nome, foto_url: novoCaminho, xp_total: 0, nivel_atual: 1
             });
@@ -120,9 +113,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await verificarPerfilCompleto();
     });
 
-    // ==================================================
-    // REMOVER FOTO DE PERFIL
-    // ==================================================
     btnRemoverFoto.addEventListener('click', async () => {
         if (!perfil?.foto_url) return;
         if (!confirm('Remover sua foto de perfil? Você poderá anexar outra depois.')) return;
@@ -152,7 +142,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnRemoverFoto.innerHTML = '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-excluir"></use></svg> Remover foto';
     });
 
-    // Salvar alterações (nome)
     document.getElementById('formPerfil').addEventListener('submit', async (e) => {
         e.preventDefault();
         const novoNome = document.getElementById('editarNome').value.trim();
@@ -168,7 +157,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await verificarPerfilCompleto();
     });
 
-    // Gerar relatório
     document.getElementById('btnRelatorio').addEventListener('click', async () => {
         const { data: tarefas } = await supabase.from('tarefas').select('*').eq('usuario_id', user.id);
         const concluidas = tarefas.filter(t => t.concluida).length;
@@ -195,6 +183,5 @@ RESUMO:
         URL.revokeObjectURL(a.href);
     });
 
-    // Logout
     document.getElementById('btnSair').addEventListener('click', sairDaConta);
 });

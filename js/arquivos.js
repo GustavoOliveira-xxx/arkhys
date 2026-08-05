@@ -17,11 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const campoBusca = document.getElementById('buscaArquivos');
     const limparBusca = document.getElementById('limparBusca');
 
-    let filtroAtivo = 'todos'; // 'todos' | 'entregas' | 'anexos'
+    let filtroAtivo = 'todos';
     let termoBusca = '';
     let arquivos = [];
 
-    // --- Fixados (por usuário, guardados localmente) ---
     const CHAVE_FIXADOS = `arkhys:cofre:fixados:${user.id}`;
 
     function lerFixados() {
@@ -50,7 +49,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         carregarArquivos();
     });
 
-    // Busca (filtra em memória, sem recarregar do servidor)
     campoBusca?.addEventListener('input', () => {
         termoBusca = campoBusca.value.trim().toLowerCase();
         if (limparBusca) limparBusca.hidden = termoBusca.length === 0;
@@ -65,7 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         campoBusca.focus();
     });
 
-    // Abre seletor de arquivos
     btnEnviar.addEventListener('click', () => inputArquivo.click());
 
     inputArquivo.addEventListener('change', async (e) => {
@@ -90,7 +87,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Carrega lista a partir da tabela `arquivos`
     async function carregarArquivos() {
         lista.innerHTML = '<div class="item-vazio">Carregando...</div>';
 
@@ -112,7 +108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         arquivos = data || [];
 
-        // Prévia (miniatura) das imagens, buscada em lote — o bucket é privado
         const caminhosImagem = arquivos.filter(a => ehImagem(a.nome_arquivo)).map(a => a.url_arquivo);
         arquivos.previas = await urlsAssinadasEmLote(caminhosImagem);
 
@@ -136,7 +131,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return alvo.includes(termoBusca);
         });
 
-        // Fixados sempre primeiro, mantendo a ordem de data dentro de cada grupo
         itens = [
             ...itens.filter(a => fixados.has(a.id)),
             ...itens.filter(a => !fixados.has(a.id))
@@ -176,7 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
     }
 
-    // Baixa o arquivo já com o nome salvo (renomeado ou não)
     async function baixarArquivo(caminho, nome) {
         const { data, error } = await supabase.storage.from('arquivos').createSignedUrl(caminho, 60 * 10, { download: nome });
         if (error) {
@@ -191,7 +184,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         link.remove();
     }
 
-    // Ações
     lista.addEventListener('click', async (e) => {
         const item = e.target.closest('.item-tarefa');
         if (!item) return;

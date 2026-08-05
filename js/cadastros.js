@@ -24,8 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let abaAtual = 'materias';
     let itemEditando = null;
 
-    // "displayLabel" define o rótulo curto usado na listagem (padrão "Rótulo: valor"),
-    // separado do "label" (mais longo, em caixa alta) usado no formulário.
     const configAbas = {
         'materias': {
             titulo: 'Matérias', tabela: 'materias', msgVazio: 'Nenhuma matéria cadastrada.',
@@ -97,7 +95,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const div = document.createElement('div');
             div.className = 'item-cadastro';
 
-            // Padrão único para os campos de texto: "Rótulo: valor", um por linha
             const linhasHtml = config.campos
                 .filter(c => c.type !== 'image')
                 .map(c => item[c.key]
@@ -133,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { error } = await supabase.from(configAbas[abaAtual].tabela).delete().eq('id', item.id);
         if (error) { alert('Erro ao excluir: ' + error.message); return; }
 
-        // Se o item tinha um ícone próprio, remove também do storage
         const campoImagem = configAbas[abaAtual].campos.find(c => c.type === 'image');
         if (campoImagem && item[campoImagem.key]) {
             await removerMidiaPublica(item[campoImagem.key]);

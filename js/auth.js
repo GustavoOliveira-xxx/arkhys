@@ -1,10 +1,5 @@
 import { supabase } from './supabase-config.js';
 
-// ==================================================
-// FUNÇÕES GERAIS E PROTEÇÃO DE ROTAS
-// ==================================================
-
-// Verifica se o usuário já está logado — se sim, manda direto para o painel
 async function verificarSessao() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
@@ -12,14 +7,10 @@ async function verificarSessao() {
     }
 }
 
-// Roda automaticamente nas páginas de login/cadastro
 if (document.body.classList.contains('tela-acesso')) {
     verificarSessao();
 }
 
-// ==================================================
-// CADASTRO DE NOVO USUÁRIO
-// ==================================================
 const formCadastro = document.getElementById('formCadastro');
 if (formCadastro) {
     formCadastro.addEventListener('submit', async (e) => {
@@ -30,7 +21,6 @@ if (formCadastro) {
         const senha = document.getElementById('senha').value;
         const confirmaSenha = document.getElementById('confirmaSenha').value;
 
-        // Validações simples
         if (senha !== confirmaSenha) {
             alert('⚠️ As senhas não coincidem!');
             return;
@@ -40,7 +30,6 @@ if (formCadastro) {
             return;
         }
 
-        // Cadastra no Supabase
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: senha,
@@ -60,9 +49,6 @@ if (formCadastro) {
     });
 }
 
-// ==================================================
-// LOGIN DE USUÁRIO
-// ==================================================
 const formLogin = document.getElementById('formLogin');
 if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
@@ -84,18 +70,11 @@ if (formLogin) {
     });
 }
 
-// ==================================================
-// FUNÇÃO DE LOGOUT (usaremos no perfil depois)
-// ==================================================
 export async function sairDaConta() {
     await supabase.auth.signOut();
     window.location.href = 'login.html';
 }
 
-// ==================================================
-// PROTEÇÃO DAS PÁGINAS INTERNAS
-// (colocamos no final para rodar em todas as páginas que não são de acesso)
-// ==================================================
 if (!document.body.classList.contains('tela-acesso')) {
     document.addEventListener('DOMContentLoaded', async () => {
         const { data: { session } } = await supabase.auth.getSession();

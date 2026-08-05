@@ -1,31 +1,19 @@
-// ==================================================
-// UTILITÁRIOS DE MÍDIA — compartilhado entre páginas
-// Centraliza a lógica de ícones por tipo de arquivo e
-// geração de URLs (públicas e assinadas), para manter
-// o mesmo padrão visual em toda a aplicação.
-// ==================================================
 import { supabase } from './supabase-config.js';
 
-// Extensões tratadas como imagem
 const EXTENSOES_IMAGEM = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
 
 export function extensaoDoArquivo(nomeArquivo = '') {
     return nomeArquivo.split('.').pop().toLowerCase();
 }
 
-// O Supabase Storage rejeita chaves com acentos, espaços e vários
-// caracteres especiais ("Invalid key"). Esta função normaliza o nome
-// original do arquivo para algo seguro como chave, mantendo a extensão
-// e um nome ainda reconhecível (o nome "de verdade" fica salvo à parte,
-// em anexo_nome/nome_arquivo, então a exibição pro usuário não muda).
 export function nomeArquivoSeguro(nomeOriginal = 'arquivo') {
     const partes = nomeOriginal.split('.');
     const extensao = partes.length > 1 ? partes.pop().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
     const base = partes.join('.')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')  // qualquer coisa que não seja letra/número vira "-"
-        .replace(/^-+|-+$/g, '')      // sem "-" sobrando nas pontas
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
         .slice(0, 60) || 'arquivo';
 
     return extensao ? `${base}.${extensao}` : base;
@@ -36,8 +24,6 @@ export function ehImagem(nomeArquivo = '', tipoMime = '') {
     return EXTENSOES_IMAGEM.includes(extensaoDoArquivo(nomeArquivo));
 }
 
-// Emoji representativo do tipo de arquivo, usado como ícone quando
-// não é possível (ou não faz sentido) mostrar uma miniatura da imagem
 export function iconePorTipo(nomeArquivo = '', tipoMime = '') {
     if (ehImagem(nomeArquivo, tipoMime)) return '🖼️';
     const ext = extensaoDoArquivo(nomeArquivo);
@@ -49,7 +35,6 @@ export function iconePorTipo(nomeArquivo = '', tipoMime = '') {
     return '📎';
 }
 
-// Rótulo curto do tipo de mídia (para textos como "Foto anexada")
 export function rotuloPorTipo(nomeArquivo = '', tipoMime = '') {
     if (ehImagem(nomeArquivo, tipoMime)) return 'Foto';
     const ext = extensaoDoArquivo(nomeArquivo);
@@ -60,7 +45,6 @@ export function rotuloPorTipo(nomeArquivo = '', tipoMime = '') {
     return 'Arquivo';
 }
 
-// Ícone SVG do tipo de arquivo (usado nos modais, no lugar do emoji de iconePorTipo)
 export function iconeSvgPorTipo(nomeArquivo = '', tipoMime = '') {
     if (ehImagem(nomeArquivo, tipoMime)) return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-imagem"></use></svg>';
     const ext = extensaoDoArquivo(nomeArquivo);
@@ -72,13 +56,10 @@ export function iconeSvgPorTipo(nomeArquivo = '', tipoMime = '') {
     return '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-anexo"></use></svg>';
 }
 
-// Retorna a nome de exibição de um caminho de storage, removendo o
-// prefixo "timestamp_" usado para evitar colisão de nomes
 export function nomeExibicao(caminhoOuNome = '') {
     return caminhoOuNome.split('/').pop().replace(/^[0-9]+_/, '');
 }
 
-// --- Bucket público (avatar de perfil e ícone de matéria) ---
 export function urlPublicaMidia(caminho) {
     if (!caminho) return null;
     const { data } = supabase.storage.from('midia-publica').getPublicUrl(caminho);
@@ -94,9 +75,6 @@ export async function removerMidiaPublica(caminho) {
     await supabase.storage.from('midia-publica').remove([caminho]);
 }
 
-// --- Bucket privado (anexos/documentos do cofre) ---
-// Gera URLs assinadas (temporárias) em lote — muito mais eficiente do
-// que uma chamada por item ao renderizar uma lista de tarefas/arquivos.
 export async function urlsAssinadasEmLote(caminhos = [], duracaoSegundos = 60 * 30) {
     const unicos = [...new Set(caminhos.filter(Boolean))];
     const mapa = {};
@@ -111,12 +89,6 @@ export async function urlsAssinadasEmLote(caminhos = [], duracaoSegundos = 60 * 
     return mapa;
 }
 
-// ==================================================
-// VISUALIZADOR DE ANEXOS — lightbox de imagem e preview
-// de PDF, compartilhados entre o modal "Saiba mais" das
-// tarefas e o Cofre de Arquivos, para manter a mesma
-// experiência de galeria nos dois lugares.
-// ==================================================
 function fecharVisualizador() {
     document.getElementById('lightboxAnexo')?.remove();
 }
@@ -128,8 +100,6 @@ function montarOverlayVisualizador(conteudoInterno, classeExtra = '') {
     lightbox.className = `lightbox-overlay ${classeExtra}`.trim();
     lightbox.innerHTML = `${conteudoInterno}<button type="button" class="btn-acao lightbox-fechar" title="Fechar"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>`;
 
-    // closest() é essencial: o clique quase sempre cai no <svg>/<use> DENTRO
-    // do botão X, e não no botão em si — com classList.contains o X não fechava.
     lightbox.addEventListener('click', (e) => {
         if (e.target === lightbox || e.target.closest('.lightbox-fechar')) lightbox.remove();
     });
@@ -141,12 +111,10 @@ function montarOverlayVisualizador(conteudoInterno, classeExtra = '') {
     return lightbox;
 }
 
-// Amplia uma imagem em tela cheia
 export function abrirLightboxImagem(url, nome = '') {
     montarOverlayVisualizador(`<img src="${url}" alt="${nome}">`);
 }
 
-// Visualiza um PDF embutido, sem obrigar o download
 export function abrirVisualizadorPdf(url, nome = '') {
     montarOverlayVisualizador(`
         <div class="lightbox-pdf-caixa">
@@ -162,9 +130,6 @@ export function abrirVisualizadorPdf(url, nome = '') {
     `, 'lightbox-pdf');
 }
 
-// Abre o visualizador certo pra qualquer anexo (imagem, PDF, ou nova
-// aba/download pros demais tipos), a partir de uma URL já assinada
-// e do nome do arquivo — usado tanto nas tarefas quanto no Cofre.
 export function abrirVisualizadorArquivo(url, nome = '', tipoMime = '') {
     if (!url) return;
     if (ehImagem(nome, tipoMime)) return abrirLightboxImagem(url, nome);

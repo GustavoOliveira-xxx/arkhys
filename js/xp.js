@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const xpTotal = perfil?.xp_total || 0;
     const nivelAtual = perfil?.nivel_atual || 1;
 
-    // ==================================================
-    // CARD DO NÍVEL ATUAL
-    // ==================================================
     if (niveis.length) {
         const progresso = calcularProgresso(xpTotal, niveis);
         document.getElementById('seloNivelAtual').textContent = nivelAtual;
@@ -34,9 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('progressoNivelTexto').textContent = textoProgresso;
     }
 
-    // ==================================================
-    // TRILHA DOS 15 NÍVEIS
-    // ==================================================
     const trilha = document.getElementById('trilhaNiveis');
     if (!niveis.length) {
         trilha.innerHTML = '<p class="metadado">Não foi possível carregar os níveis.</p>';

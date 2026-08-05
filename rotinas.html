@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkhys | Rotina</title>
+    <link rel="icon" type="image/png" href="assets/logo-arkhys-b.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style-global.css">
+    <link rel="stylesheet" href="css/icones.css">
+
+    <script type="module" src="js/loading.js"></script>
+    <script type="module" src="js/supabase-config.js"></script>
+</head>
+<body>
+
+    <div class="bg-dinamico" aria-hidden="true"></div>
+
+    <a href="index.html" class="logo-mobile-flutuante" aria-label="Arkhys">
+        <img src="assets/logo-arkhys.png" alt="Arkhys" loading="lazy">
+    </a>
+
+    <nav class="navegacao">
+        <div class="nav-conteudo">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo-arkhys.png" alt="Arkhys" loading="lazy">
+            </a>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-home"></use></svg></span>
+                    <span>Início</span>
+                </a>
+                <a href="tarefas.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-tarefas"></use></svg></span>
+                    <span>Tarefas</span>
+                </a>
+                <a href="rotinas.html" class="nav-item ativo">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg></span>
+                    <span>Rotina</span>
+                </a>
+                <a href="cadastros.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-config"></use></svg></span>
+                    <span>Cadastros</span>
+                </a>
+                <a href="calendario.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-calendario"></use></svg></span>
+                    <span>Calendário</span>
+                </a>
+                <a href="xp.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-xp"></use></svg></span>
+                    <span>XP</span>
+                </a>
+                <a href="arquivos.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-arquivos"></use></svg></span>
+                    <span>Cofre</span>
+                </a>
+                <a href="perfil.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-perfil"></use></svg></span>
+                    <span>Perfil</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="conteudo-principal">
+        <header class="cabecalho-pagina">
+            <div class="cabecalho-texto">
+                <h1>Rotina</h1>
+                <p>Suas aulas fixas da semana e o diário do que você aprendeu em cada uma</p>
+            </div>
+            <button type="button" id="btnNovaRotina" class="botao botao-primario">+ Nova rotina</button>
+        </header>
+
+        <section class="secao-rotina">
+            <div class="titulo-secao-linha">
+                <h2 class="titulo-secao"><span class="marca-destaque"></span>Suas aulas de <span id="rotuloDiaHoje" class="texto-destaque">hoje</span></h2>
+                <span class="metadado" id="resumoDiaHoje"></span>
+            </div>
+            <div class="lista-itens" id="listaRotinasHoje"></div>
+        </section>
+
+        <section class="secao-rotina">
+            <div class="titulo-secao-linha">
+                <h2 class="titulo-secao"><span class="marca-destaque"></span>Sua semana</h2>
+                <span class="metadado">Toque em uma aula para registrar o aprendizado do dia</span>
+            </div>
+            <div class="grade-semana" id="gradeSemana"></div>
+        </section>
+
+        <section class="secao-rotina">
+            <div class="titulo-secao-linha">
+                <h2 class="titulo-secao"><span class="marca-destaque"></span>Diário de bordo</h2>
+                <select id="filtroRotinaDiario" class="campo-entrada campo-compacto">
+                    <option value="">Todas as aulas</option>
+                </select>
+            </div>
+            <div class="lista-itens" id="listaDiario"></div>
+        </section>
+    </main>
+
+    <div id="modalRotina" class="modal-overlay" hidden>
+        <div class="form-modal">
+            <div class="cabecalho-modal">
+                <h3 id="tituloModalRotina">Nova rotina</h3>
+                <button type="button" class="btn-acao" data-acao="fechar-rotina"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>
+            </div>
+
+            <form id="formRotina">
+                <input type="hidden" id="idRotina">
+
+                <div class="grupo-campo">
+                    <label for="tituloRotina">NOME DA AULA OU COMPROMISSO</label>
+                    <input type="text" id="tituloRotina" class="campo-entrada" placeholder="Ex: Física — Prof. Helena" required>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="materiaRotina">MATÉRIA</label>
+                    <select id="materiaRotina" class="campo-entrada">
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+
+                <div class="grupo-campo">
+                    <label>DIAS DA SEMANA</label>
+                    <div class="seletor-dias" id="seletorDias"></div>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="horarioRotina">HORÁRIO <span class="metadado">(opcional)</span></label>
+                    <input type="time" id="horarioRotina" class="campo-entrada">
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="localRotina">LOCAL <span class="metadado">(opcional)</span></label>
+                    <input type="text" id="localRotina" class="campo-entrada" placeholder="Ex: Sala 204 / Laboratório">
+                </div>
+
+                <div class="grupo-campo">
+                    <label class="item-ferramenta-checkbox">
+                        <input type="checkbox" id="ativaRotina" checked>
+                        <span>Rotina ativa <span class="metadado">(aparece nos lembretes do dia)</span></span>
+                    </label>
+                </div>
+
+                <div class="acoes-form">
+                    <button type="submit" class="botao botao-primario w-full">Salvar rotina</button>
+                    <button type="button" id="btnExcluirRotina" class="botao botao-perigo w-full" hidden>Excluir rotina</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalRegistro" class="modal-overlay" hidden>
+        <div class="form-modal">
+            <div class="cabecalho-modal">
+                <h3>Registro da aula</h3>
+                <button type="button" class="btn-acao" data-acao="fechar-registro"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-fechar"></use></svg></button>
+            </div>
+
+            <form id="formRegistro">
+                <input type="hidden" id="idRegistro">
+                <input type="hidden" id="idRotinaRegistro">
+
+                <div class="registro-cabecalho">
+                    <div class="registro-cabecalho-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg></div>
+                    <div>
+                        <strong id="nomeRotinaRegistro"></strong>
+                        <p class="metadado" id="dataRotinaRegistro"></p>
+                    </div>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="dataRegistro">DIA DA AULA</label>
+                    <input type="date" id="dataRegistro" class="campo-entrada" required>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="conteudoRegistro">CONTEÚDO DADO EM AULA</label>
+                    <textarea id="conteudoRegistro" class="campo-entrada" rows="3" placeholder="Ex: Leis de Newton, exercícios da página 84"></textarea>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="aprendizadoRegistro">O QUE EU APRENDI <span class="metadado">(com as suas palavras)</span></label>
+                    <textarea id="aprendizadoRegistro" class="campo-entrada" rows="4" placeholder="Escreva como se fosse explicar para alguém"></textarea>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="duvidasRegistro">DÚVIDAS PARA REVISAR</label>
+                    <textarea id="duvidasRegistro" class="campo-entrada" rows="2" placeholder="Ex: revisar a diferença entre massa e peso"></textarea>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="fotosRegistro">FOTOS DO CADERNO OU DO QUADRO</label>
+                    <input type="file" id="fotosRegistro" class="campo-entrada" accept="image/*,.pdf" multiple>
+                    <p class="metadado dica-colar">Você também pode colar imagens da área de transferência (Ctrl+V) aqui dentro.</p>
+                    <div id="listaFotosRegistro" class="lista-anexos-form"></div>
+                </div>
+
+                <div class="acoes-form">
+                    <button type="submit" class="botao botao-primario w-full">Salvar registro</button>
+                    <button type="button" id="btnExcluirRegistro" class="botao botao-perigo w-full" hidden>Excluir registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/ui.js"></script>
+    <script type="module" src="js/rotinas.js"></script>
+</body>
+</html>

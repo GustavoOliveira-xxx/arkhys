@@ -37,6 +37,10 @@
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-tarefas"></use></svg></span>
                     <span>Tarefas</span>
                 </a>
+                <a href="rotinas.html" class="nav-item">
+                    <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg></span>
+                    <span>Rotina</span>
+                </a>
                 <a href="cadastros.html" class="nav-item">
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-config"></use></svg></span>
                     <span>Cadastros</span>
@@ -70,6 +74,14 @@
             <button type="button" id="btnNovaTarefa" class="botao botao-primario">+ Nova Tarefa</button>
         </header>
 
+        <div class="barra-visao">
+            <div class="alternador-visao" id="alternadorVisao" role="tablist">
+                <button type="button" class="opcao-visao ativa" data-visao="lista"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-tarefas"></use></svg> Lista</button>
+                <button type="button" class="opcao-visao" data-visao="quadro"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-orgaos"></use></svg> Quadro</button>
+            </div>
+            <span class="metadado" id="dicaVisao">A lista continua sendo a visao padrao do Arkhys.</span>
+        </div>
+
         <div class="abas-tarefas" id="abasTarefas" role="tablist">
             <button type="button" class="aba-tarefa ativa" data-status="pendentes"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-tarefas"></use></svg> Pendentes</button>
             <button type="button" class="aba-tarefa" data-status="concluidas"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-concluido"></use></svg> Concluídas</button>
@@ -82,6 +94,8 @@
         </div>
 
         <div class="lista-itens" id="listaTarefas"></div>
+
+        <div class="quadro-kanban" id="quadroTarefas" hidden></div>
     </main>
 
     <div id="modalTarefa" hidden>
@@ -154,6 +168,15 @@
                     <div id="listaTiposEntrega" class="lista-selecao-multipla">
                         <p class="texto-vazio-pequeno">Nenhum tipo de entrega cadastrado ainda.</p>
                     </div>
+                </div>
+
+                <div class="grupo-campo">
+                    <label for="novoPasso">PASSOS DA ATIVIDADE <span class="metadado">(opcional — divida a tarefa em etapas menores)</span></label>
+                    <div class="linha-dupla">
+                        <input type="text" id="novoPasso" class="campo-entrada" placeholder="Ex: Ler o capitulo 3" maxlength="120">
+                        <button type="button" id="btnAdicionarPasso" class="botao botao-secundario">Adicionar</button>
+                    </div>
+                    <div id="listaPassosForm" class="lista-passos-form"></div>
                 </div>
 
                 <div class="grupo-campo">

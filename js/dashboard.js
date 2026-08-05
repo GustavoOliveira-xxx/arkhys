@@ -6,21 +6,18 @@ import { celebrarConclusao } from './celebracao.js';
 import { concederXpDoDia, concederXpDiaPerfeito, concederXpConclusaoTarefa, buscarNiveis, calcularProgresso } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Pegar dados do usuário logado
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         window.location.href = 'login.html';
         return;
     }
 
-    // Saudação personalizada
     const nomeUsuario = user.user_metadata?.nome_completo?.split(' ')[0] || 'Usuário';
     document.getElementById('saudacaoUsuario').textContent = `Bem-vindo(a), ${nomeUsuario}`;
 
-    // 2. Buscar dados do banco
     const hoje = new Date().toISOString().split('T')[0];
 
-    // Tarefas pendentes
     const { data: tarefas, error } = await supabase
         .from('tarefas')
         .select('*')
@@ -33,33 +30,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Matérias — usadas para mostrar o ícone/foto cadastrado em cada item
     const { data: materias } = await supabase
         .from('materias')
         .select('*')
         .eq('usuario_id', user.id);
 
-    // Anexos de todas as tarefas exibidas, buscados em lote (evita 1 chamada por item)
     const anexosMap = await mapaAnexosPorTarefa(tarefas.map(t => t.id));
 
-    // Separar contadores
     const pendentes = tarefas.length;
     const paraHoje = tarefas.filter(t => t.data_entrega === hoje).length;
     const proximas = tarefas.filter(t => t.data_entrega > hoje).slice(0, 3);
 
-    // Atualizar os cards
     document.getElementById('qtdPendentes').textContent = pendentes;
     document.getElementById('qtdHoje').textContent = `${paraHoje} para hoje`;
     document.getElementById('qtdEntregas').textContent = proximas.length;
 
-    // Dados de XP, Nível e foto de perfil (colunas corretas: xp_total / nivel_atual / foto_url)
     let { data: perfil } = await supabase
         .from('perfil')
         .select('xp_total, nivel_atual, foto_url')
         .eq('usuario_id', user.id)
         .maybeSingle();
 
-    // XP só por abrir o app hoje (uma vez por dia — a função no banco garante isso)
     await concederXpDoDia(hoje);
     ({ data: perfil } = await supabase
         .from('perfil')
@@ -90,7 +81,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Ícone do item: foto da matéria (se cadastrada) ou emoji padrão
     function iconeDoItem(materiaId, emojiPadrao) {
         const materia = materias?.find(m => m.id === materiaId);
         if (materia?.icone_url) {
@@ -134,7 +124,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.reload();
     }
 
-    // Preencher lista "O que fazer hoje"
     const listaHoje = document.getElementById('listaHoje');
     const tarefasHoje = tarefas.filter(t => t.data_entrega === hoje);
 
@@ -164,7 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
     }
 
-    // Preencher "Próximas atividades"
     const listaProximas = document.getElementById('listaProximas');
     if (proximas.length === 0) {
         listaProximas.innerHTML = `<div class="item-vazio">Nenhuma atividade futura cadastrada</div>`;
@@ -189,7 +177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
     }
 
-    // "Concluir" rápido + "Saiba mais" — mesmo comportamento generalizado usado em Tarefas
     [listaHoje, listaProximas].forEach(lista => {
         lista.addEventListener('click', async (e) => {
             const item = e.target.closest('.item-tarefa');

@@ -1,7 +1,3 @@
-/* Arkhys Icones — Estilos utilitários para substituir emojis por SVGs */
-/* v1.1 — revisado: stroke 1.75 (mais refinado), sem cores hardcoded duplicadas */
-
-/* Classe base para ícones SVG inline */
 .icon-svg {
   display: inline-block;
   width: 1.2em;
@@ -12,26 +8,17 @@
   stroke-width: 1.75;
 }
 
-/* Tamanhos */
 .icon-svg-sm { width: 1em; height: 1em; }
 .icon-svg-lg { width: 1.5em; height: 1.5em; }
 .icon-svg-xl { width: 2em; height: 2em; }
 .icon-svg-2xl { width: 3em; height: 3em; }
 
-/* Para uso dentro de botões e links */
 .icon-svg-btn {
   width: 16px;
   height: 16px;
   vertical-align: middle;
 }
 
-/* ==================================================
-   Cores semânticas — IMPORTANTE: os SVGs em si não têm
-   mais cor fixa (currentColor em tudo). A cor vem daqui,
-   via `color`, e o ícone herda com currentColor. Isso
-   evita ter a cor duplicada em dois lugares (o bug da
-   v1.0, onde a cor estava fixa no SVG *e* de novo no CSS).
-   ================================================== */
 .icon-dificuldade-facil { color: #4ade80; }
 .icon-dificuldade-medio { color: #facc15; }
 .icon-dificuldade-dificil { color: #f87171; }
@@ -39,21 +26,3 @@
 .icon-erro { color: #ef4444; }
 .icon-aviso { color: #f59e0b; }
 .icon-sucesso { color: #22c55e; }
-
-/* ==================================================
-   COMO USAR
-   ==================================================
-   Use SEMPRE via <svg><use> (sprite) ou SVG inline colado
-   direto no HTML. A tag <img src="icone.svg"> NÃO funciona
-   pra recolorir — um <img> carrega o SVG como documento à
-   parte, isolado, e currentColor/CSS não alcança o interior
-   dele. Isso vale mesmo com os ícones já usando currentColor.
-
-   Forma recomendada (sprite, mais leve):
-     <svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-home"></use></svg>
-
-   Com cor semântica:
-     <svg class="icon-svg icon-dificuldade-medio">
-       <use href="assets/icones/arkhys-icons.svg#icon-dificuldade-medio"></use>
-     </svg>
-*/

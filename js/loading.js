@@ -1,7 +1,3 @@
-// ==================================================
-// NOVO SISTEMA DE CARREGAMENTO ARKHYS (Premium Edition)
-// ==================================================
-
 let overlay = null;
 let contador = 0;
 
@@ -43,37 +39,29 @@ function garantirOverlay() {
     return overlay;
 }
 
-/**
- * Mostra o overlay de carregamento
- * @param {string} mensagem - Mensagem a ser exibida
- */
 export function mostrarCarregamento(mensagem = 'Iniciando Protocolo...') {
     contador++;
     const el = garantirOverlay();
     const texto = el.querySelector('.loading-global-texto');
     if (texto) texto.textContent = mensagem;
     el.classList.add('visivel');
-    document.body.style.overflow = 'hidden'; // Trava o scroll
+    document.body.style.overflow = 'hidden';
 }
 
-/**
- * Esconde o overlay de carregamento
- */
 export function esconderCarregamento() {
     contador = Math.max(0, contador - 1);
     if (contador === 0 && overlay) {
         overlay.classList.remove('visivel');
         setTimeout(() => {
             if (!overlay.classList.contains('visivel')) {
-                document.body.style.overflow = ''; // Destrava o scroll após a transição
+                document.body.style.overflow = '';
             }
         }, 500);
     }
 }
 
-// Inicialização automática para cobrir o carregamento da página
 mostrarCarregamento('Sincronizando Arkhys...');
 document.addEventListener('DOMContentLoaded', () => {
-    // Pequeno delay para garantir que a animação seja apreciada
+
     setTimeout(esconderCarregamento, 1200);
 });

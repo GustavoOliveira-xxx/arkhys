@@ -1,13 +1,7 @@
-
-
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ==========================================================================
-   1. VARIÁVEIS GLOBAIS (:root)
-   Fonte única de verdade para cores, tipografia, espaçamentos e medidas.
-   ========================================================================== */
 :root {
-    /* --- Cores base --- */
+
     --cor-fundo: #050407;
     --cor-superficie: #0c0a10;
     --cor-superficie-alta: #110e15;
@@ -16,22 +10,18 @@
     --cor-destaque-fraco: rgba(193, 18, 31, 0.15);
     --cor-destaque-fraquissimo: rgba(193, 18, 31, 0.06);
 
-    /* --- Texto --- */
     --texto-principal: #f8f9fa;
     --texto-secundario: #9ca3af;
     --texto-terciario: #6b7280;
 
-    /* --- Bordas e divisores --- */
     --cor-borda: #1b1823;
     --cor-borda-clara: #241f2b;
 
-    /* --- Sombras e brilhos --- */
     --brilho-destaque: rgba(193, 18, 31, 0.15);
     --brilho-destaque-forte: rgba(193, 18, 31, 0.32);
     --sombra-card: 0 8px 24px rgba(0, 0, 0, 0.45);
     --sombra-card-hover: 0 16px 40px rgba(0, 0, 0, 0.55);
 
-    /* --- Tipografia --- */
     --fonte-titulo: 'Fraunces', 'Georgia', serif;
     --fonte-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --fonte-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
@@ -40,36 +30,28 @@
     --peso-semibold: 600;
     --peso-bold: 700;
 
-    /* --- Escala de espaçamento --- */
     --espaco-xs: 0.5rem;
     --espaco-sm: 0.875rem;
     --espaco-md: 1.5rem;
     --espaco-lg: 2.25rem;
     --espaco-xl: 3.5rem;
 
-    /* --- Raio de borda (cantos suaves, não totalmente arredondados) --- */
     --raio-sm: 8px;
     --raio-md: 14px;
     --raio-lg: 18px;
 
-    /* --- Transições --- */
     --duracao-rapida: 180ms;
     --duracao-media: 240ms;
     --duracao-lenta: 320ms;
     --curva-suave: cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* --- Medidas estruturais --- */
     --altura-nav: 132px;
     --altura-nav-mobile: 68px;
     --largura-maxima: 1180px;
 
-    /* --- Tamanho da "orelha" do cartão-ficha (elemento assinatura) --- */
     --orelha-ficha: 16px;
 }
 
-/* ==========================================================================
-   2. RESET UNIVERSAL
-   ========================================================================== */
 *,
 *::before,
 *::after {
@@ -119,7 +101,6 @@ img {
     max-width: 100%;
 }
 
-/* Respeita preferência de movimento reduzido do usuário */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -129,7 +110,6 @@ img {
     }
 }
 
-/* Foco visível para acessibilidade de teclado */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
@@ -138,12 +118,6 @@ input:focus-visible {
     border-radius: var(--raio-sm);
 }
 
-/* ==========================================================================
-   3. FUNDO DINÂMICO
-   Gradiente diagonal + pontos de luz vermelhos em profundidades e
-   velocidades diferentes, mais uma textura de grão muito fina que dá
-   ao preto profundo uma sensação de papel/matéria em vez de "vidro".
-   ========================================================================== */
 .bg-dinamico {
     position: fixed;
     inset: 0;
@@ -156,8 +130,6 @@ input:focus-visible {
     animation: fundo-surgir 1.8s var(--curva-suave) forwards;
 }
 
-/* Grão sutil — SVG de ruído fractal em opacidade mínima, dá textura
-   de papel ao preto profundo em vez do "vidro" genérico */
 .bg-dinamico::after {
     content: '';
     position: absolute;
@@ -192,10 +164,6 @@ input:focus-visible {
     50% { transform: translate(60px, 40px) scale(1.08); }
 }
 
-/* ==========================================================================
-   4. ANIMAÇÃO DE CARREGAMENTO EM CAMADAS
-   Navegação → cabeçalho → cartões → conteúdo, com pequeno intervalo.
-   ========================================================================== */
 @keyframes surgir-camada {
     from {
         opacity: 0;
@@ -232,7 +200,6 @@ input:focus-visible {
     animation-delay: 0.64s;
 }
 
-/* Animação exclusiva da logo — fade-in + pulso + brilho sutil */
 @keyframes logo-surgir {
     0% {
         opacity: 0;
@@ -251,9 +218,6 @@ input:focus-visible {
     }
 }
 
-/* Logo — área com leve "chapa" de contraste atrás para garantir
-   legibilidade em qualquer fundo, renderização em alta qualidade e
-   nitidez máxima permitida pelo arquivo de origem */
 .nav-logo {
     display: flex;
     align-items: center;
@@ -262,22 +226,12 @@ input:focus-visible {
     border-radius: var(--raio-sm);
 }
 
-/* Logo flutuante do mobile — fica FORA do <nav>, de propósito, pra não
-   herdar o containing block criado pelo backdrop-filter do menu (esse
-   era o bug: um position:fixed dentro do <nav> com backdrop-filter se
-   ancora relativo ao próprio <nav>, não à tela — por isso a versão
-   antiga ficava presa dentro da barra inferior, tampando Cofre/Perfil). */
 .logo-mobile-flutuante {
     display: none;
 }
 
 .nav-logo img {
-    /* A logo real é um emblema largo (~1.48:1) — a altura define o
-       tamanho, a largura acompanha proporcionalmente via 'auto'.
-       Sem filtros e sem image-rendering forçado: a arte é ilustrativa
-       e detalhada (não pixel art), então o navegador deve usar
-       reamostragem suave (padrão) para preservar cada traço fino
-       exatamente como está no arquivo original. */
+
     height: 108px;
     width: auto;
     max-width: 400px;
@@ -285,10 +239,6 @@ input:focus-visible {
     animation: logo-surgir 1.1s var(--curva-suave) both;
 }
 
-/* ==========================================================================
-   5. NAVEGAÇÃO PRINCIPAL
-   Fixa no topo (desktop) e na base (mobile).
-   ========================================================================== */
 .navegacao {
     position: fixed;
     top: 0;
@@ -348,7 +298,6 @@ input:focus-visible {
     transform: scale(1.12);
 }
 
-/* Item ativo — marcação vermelha com efeito de preenchimento suave */
 .nav-item.ativo {
     color: var(--texto-principal);
     background: linear-gradient(180deg, var(--cor-destaque-fraco), transparent);
@@ -370,18 +319,12 @@ input:focus-visible {
     transform: scale(1.12);
 }
 
-/* ==========================================================================
-   6. CONTEÚDO PRINCIPAL
-   ========================================================================== */
 .conteudo-principal {
     max-width: var(--largura-maxima);
     margin: 0 auto;
     padding: calc(var(--altura-nav) + var(--espaco-xl)) var(--espaco-lg) var(--espaco-xl);
 }
 
-/* --- Cabeçalho ---
-   Título em Fraunces: dá peso editorial ao "Bem-vindo(a) de volta",
-   diferenciando o cabeçalho do restante da interface (que é Inter). */
 .cabecalho-pagina {
     margin-bottom: var(--espaco-lg);
     display: flex;
@@ -411,14 +354,6 @@ input:focus-visible {
     font-weight: var(--peso-regular);
 }
 
-/* ==========================================================================
-   7. CARTÕES DE RESUMO — "FICHAS"
-   Elemento assinatura: cada cartão tem a orelha superior direita
-   cortada, como uma ficha de catálogo físico, e o rótulo é composto
-   em monoespaçada tracked, como um carimbo de arquivo. No hover, uma
-   aba vermelha na borda esquerda acende — a mesma linguagem de
-   "marca-destaque" usada nos títulos de seção, unificando o sistema.
-   ========================================================================== */
 .grid-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -449,8 +384,6 @@ input:focus-visible {
                 border-left-color var(--duracao-media) var(--curva-suave);
 }
 
-/* Preenche a "orelha" cortada com um triângulo na cor de fundo,
-   simulando o canto dobrado de uma ficha física */
 .card-resumo::before {
     content: '';
     position: absolute;
@@ -505,7 +438,6 @@ input:focus-visible {
     letter-spacing: 0.02em;
 }
 
-/* --- Barra de XP --- */
 .barra-xp {
     position: relative;
     margin-top: var(--espaco-md);
@@ -543,16 +475,11 @@ input:focus-visible {
     100% { transform: translateX(340%); }
 }
 
-/* ==========================================================================
-   8. SEÇÕES "HOJE" E "PRÓXIMAS ATIVIDADES"
-   ========================================================================== */
 .secao-hoje,
 .secao-proximas {
     margin-bottom: var(--espaco-xl);
 }
 
-/* Título de seção com "linha de destaque" ao lado — mantém o peso
-   editorial do Fraunces também nos títulos internos */
 .titulo-secao {
     display: flex;
     align-items: center;
@@ -648,8 +575,6 @@ input:focus-visible {
     text-overflow: ellipsis;
 }
 
-/* --- Etiquetas de status — compostas em monoespaçada, como um
-   carimbo de "protocolado em" numa ficha --- */
 .status {
     flex-shrink: 0;
     font-family: var(--fonte-mono);
@@ -692,11 +617,6 @@ input:focus-visible {
     50% { box-shadow: 0 0 12px var(--brilho-destaque); }
 }
 
-/* ==========================================================================
-   9. COMPONENTES REUTILIZÁVEIS (padrão para todo o site)
-   ========================================================================== */
-
-/* --- Botões --- */
 .botao {
     display: inline-flex;
     align-items: center;
@@ -743,7 +663,6 @@ input:focus-visible {
     transform: translateY(0) scale(0.97);
 }
 
-/* --- Campos de entrada --- */
 .campo-entrada {
     width: 100%;
     padding: 0.7rem 1rem;
@@ -767,8 +686,6 @@ input:focus-visible {
     box-shadow: 0 0 0 3px var(--cor-destaque-fraquissimo);
 }
 
-/* --- Rótulo de metadado avulso (data, hora, código) — reutilizável
-   fora dos cartões, mesmo tratamento monoespaçado --- */
 .metadado {
     font-family: var(--fonte-mono);
     font-size: 0.75rem;
@@ -776,7 +693,6 @@ input:focus-visible {
     letter-spacing: 0.03em;
 }
 
-/* --- Divisor com gradiente sutil --- */
 .divisor {
     height: 1px;
     border: none;
@@ -784,7 +700,6 @@ input:focus-visible {
     margin: var(--espaco-md) 0;
 }
 
-/* --- Superfícies com vidro fosco (modais, menus flutuantes) --- */
 .vidro-fosco {
     background: rgba(12, 10, 16, 0.7);
     backdrop-filter: blur(20px) saturate(150%);
@@ -794,11 +709,6 @@ input:focus-visible {
     box-shadow: var(--sombra-card-hover);
 }
 
-/* ==========================================================================
-   10. RESPONSIVIDADE
-   ========================================================================== */
-
-/* --- Tablets --- */
 @media (max-width: 992px) {
     :root {
         --altura-nav: 104px;
@@ -822,7 +732,6 @@ input:focus-visible {
     }
 }
 
-/* --- Navegação inferior em telas menores que 768px --- */
 @media (max-width: 768px) {
     .navegacao {
         top: auto;
@@ -893,7 +802,6 @@ input:focus-visible {
     }
 }
 
-/* --- Celulares pequenos --- */
 @media (max-width: 480px) {
     .grid-cards {
         grid-template-columns: 1fr;
@@ -915,8 +823,6 @@ input:focus-visible {
         padding: 0.25rem 0.55rem;
     }
 
-    /* Em telas muito estreitas, as ações vão para uma segunda linha,
-       alinhadas com o conteúdo, em vez de apertar tudo numa única fileira */
     .item-acoes {
         flex-basis: 100%;
         justify-content: flex-end;
@@ -933,10 +839,6 @@ input:focus-visible {
     }
 }
 
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — TELAS DE ACESSO / LOGIN E CADASTRO
-   COM ANIMAÇÕES E DINÂMICA MELHORADA
-   ========================================================================== */
 body.tela-acesso {
     display: flex;
     align-items: center;
@@ -953,7 +855,6 @@ body.tela-acesso {
     animation-delay: 0.1s;
 }
 
-/* Animação especial da logo — pulso suave + brilho que passa */
 .logo-acesso {
     text-align: center;
     margin-bottom: var(--espaco-lg);
@@ -1088,15 +989,12 @@ body.tela-acesso {
     width: 100%;
 }
 
-/* Animação extra: brilho suave que percorre a borda superior */
 @keyframes brilho-longo {
     0% { box-shadow: 0 0 0 rgba(193, 18, 31, 0); }
     50% { box-shadow: 0 0 18px var(--brilho-destaque); }
     100% { box-shadow: 0 0 0 rgba(193, 18, 31, 0); }
 }
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — TELA "HOJE"
-   ========================================================================== */
+
 .grupo-tarefas {
     margin-bottom: var(--espaco-md);
 }
@@ -1117,9 +1015,6 @@ body.tela-acesso {
     font-style: italic;
 }
 
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — TELA TAREFAS
-   ========================================================================== */
 .item-tarefa.concluida {
     opacity: 0.55;
     text-decoration: line-through;
@@ -1149,8 +1044,6 @@ body.tela-acesso {
     transform: scale(1.1);
 }
 
-/* Botão "Saiba mais" — substitui o antigo ícone de lápis por algo mais
-   explícito, usado de forma consistente em Início, Hoje e Tarefas */
 .btn-saiba-mais {
     height: 28px;
     padding: 0 0.7rem;
@@ -1231,7 +1124,6 @@ body.tela-acesso {
     font-size: 1.25rem;
 }
 
-/* Ajustes específicos da página Tarefas */
 .area-filtros {
     display: flex;
     gap: var(--espaco-sm);
@@ -1256,9 +1148,6 @@ body.tela-acesso {
     }
 }
 
-/* ==========================================================================
-   CAMPOS DINÂMICOS — MODALIDADE (MEMBROS) E FERRAMENTAS (TAREFAS)
-   ========================================================================== */
 .lista-campos-dinamicos {
     display: flex;
     flex-direction: column;
@@ -1311,9 +1200,6 @@ body.tela-acesso {
     margin: 0.2rem 0;
 }
 
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — TELA CADASTROS
-   ========================================================================== */
 .botao-card {
     cursor: pointer;
     text-align: left;
@@ -1331,12 +1217,6 @@ body.tela-acesso {
     margin-bottom: 0.5rem;
 }
 
-/* Reutiliza o estilo de modal que já criamos na página de tarefas */
-
-
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — CALENDÁRIO
-   ========================================================================== */
 .navegacao-mes {
     display: flex;
     align-items: center;
@@ -1431,9 +1311,7 @@ body.tela-acesso {
 .numero-dia {
     font-family: var(--fonte-base);
 }
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — COFRE DE ARQUIVOS
-   ========================================================================== */
+
 .item-icone {
     font-size: 1.5rem;
 }
@@ -1449,7 +1327,6 @@ body.tela-acesso {
     color: white;
 }
 
-/* --- Ajustes extras de responsividade --- */
 @media (max-width: 768px) {
     .form-modal {
         padding: var(--espaco-md);
@@ -1479,7 +1356,7 @@ body.tela-acesso {
 }
 
 @media (max-width: 768px) {
-    /* Abas do gerenciador de cadastros não podem espremer no mobile */
+
     .aba-item {
         flex-shrink: 0;
         white-space: nowrap;
@@ -1514,7 +1391,6 @@ body.tela-acesso {
     }
 }
 
-/* --- Estilos para o Modal de Gerenciamento Unificado --- */
 .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(5, 4, 7, 0.9);
@@ -1552,7 +1428,6 @@ body.tela-acesso {
 }
 .item-cadastro:hover { transform: translateX(5px); background: rgba(255, 255, 255, 0.05); }
 
-/* Miniatura do ícone da matéria (quando cadastrado) */
 .item-cadastro-icone {
     width: 40px; height: 40px; flex-shrink: 0;
     border-radius: var(--raio-sm); overflow: hidden;
@@ -1560,7 +1435,6 @@ body.tela-acesso {
 }
 .item-cadastro-icone img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Padrão único para os campos exibidos no card: "Rótulo: valor", empilhados */
 .item-info {
     display: flex;
     flex-direction: column;
@@ -1607,7 +1481,6 @@ body.tela-acesso {
 .btn-deletar { color: var(--cor-destaque); }
 .btn-deletar:hover { background: rgba(193, 18, 31, 0.15); }
 
-/* Prévia do upload de ícone da matéria, dentro do formulário */
 .preview-icone-materia {
     width: 72px; height: 72px;
     border-radius: var(--raio-md);
@@ -1626,9 +1499,6 @@ body.tela-acesso {
     display: none !important;
 }
 
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — FOTO DE PERFIL (avatar)
-   ========================================================================== */
 .card-perfil-avatar {
     display: flex;
     flex-direction: column;
@@ -1664,7 +1534,6 @@ body.tela-acesso {
     padding: 0.5rem 1rem;
 }
 
-/* Avatar pequeno ao lado da saudação no Início */
 .cabecalho-saudacao {
     display: flex;
     align-items: center;
@@ -1683,7 +1552,6 @@ body.tela-acesso {
 }
 .avatar-pequeno img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Dica de "colar imagem" (Ctrl+V) no formulário de tarefa */
 .dica-colar {
     padding: 0.4rem 0.6rem;
     background: var(--cor-destaque-fraquissimo);
@@ -1692,16 +1560,12 @@ body.tela-acesso {
     margin-top: 0.4rem;
 }
 
-/* Link discreto de "remover anexo" no formulário de tarefa */
 .link-remover {
     color: #ff8087;
     text-decoration: underline;
 }
 .link-remover:hover { color: var(--cor-destaque-hover); }
 
-/* ==========================================================================
-   ESTILOS EXCLUSIVOS — MODAL "SAIBA MAIS" (detalhes da tarefa, generalizado)
-   ========================================================================== */
 .modal-detalhes {
     max-width: 480px;
 }
@@ -1833,7 +1697,6 @@ body.tela-acesso {
 .detalhe-anexo-icone { font-size: 1.3rem; flex-shrink: 0; }
 .detalhe-anexo-baixar { margin-left: auto; color: var(--cor-destaque); font-size: 0.8rem; }
 
-/* Listas de membros/ferramentas (substitui o texto separado por vírgula) */
 .detalhe-linha-lista { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
 .detalhe-lista {
     margin: 0;
@@ -1846,9 +1709,6 @@ body.tela-acesso {
     padding: 0.15rem 0;
 }
 
-/* Lightbox — imagem do anexo ampliada em tela cheia. Precisa ficar
-   ACIMA do modal-overlay (z-index 1000), já que é aberto de dentro
-   do modal "Saiba mais" e também do Cofre de Arquivos. */
 .lightbox-overlay {
     position: fixed;
     inset: 0;
@@ -1872,8 +1732,6 @@ body.tela-acesso {
     right: var(--espaco-md);
 }
 
-/* Variante do lightbox pra preview de PDF (mesma galeria, mas com
-   uma caixa em vez da imagem em tela cheia) */
 .lightbox-pdf-caixa {
     width: min(900px, 100%);
     height: min(85vh, 900px);
@@ -1896,16 +1754,12 @@ body.tela-acesso {
     flex-shrink: 0;
 }
 
-/* Cabeçalho do modal com múltiplos botões de ação (compartilhar/imprimir/fechar) */
 .cabecalho-modal-acoes {
     display: flex;
     align-items: center;
     gap: 0.4rem;
 }
 
-/* ==========================================================================
-   PÁGINA DE XP
-   ========================================================================== */
 .card-nivel-atual {
     display: flex;
     align-items: center;
@@ -2018,9 +1872,7 @@ body.tela-acesso {
 @media (max-width: 600px) {
     .card-nivel-atual { flex-direction: column; text-align: center; }
 }
-/* ==========================================================================
-   ABAS DE TAREFAS (Pendentes / Concluídas) — Tarefas
-   ========================================================================== */
+
 .abas-tarefas {
     display: flex;
     gap: 8px;
@@ -2047,9 +1899,6 @@ body.tela-acesso {
     color: var(--texto-principal);
 }
 
-/* ==========================================================================
-   MÚLTIPLOS ANEXOS — lista no formulário de tarefa
-   ========================================================================== */
 .lista-anexos-form {
     display: flex;
     flex-direction: column;
@@ -2083,9 +1932,6 @@ body.tela-acesso {
 }
 .btn-remover-anexo:hover { color: var(--cor-destaque); background: var(--cor-destaque-fraquissimo); }
 
-/* ==========================================================================
-   MÚLTIPLOS ANEXOS — galeria no modal "Saiba mais" e no Cofre
-   ========================================================================== */
 .grade-anexos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -2127,13 +1973,6 @@ body.tela-acesso {
     overflow-wrap: anywhere;
 }
 .detalhe-anexo-pdf-card .detalhe-anexo-card-icone { color: var(--cor-destaque); }
-
-/* ==========================================================================
-   OVERLAY GLOBAL DE CARREGAMENTO — todas as páginas
-   ========================================================================== */
-/* ==================================================
-   NOVO LOADER INOVADOR ARKHYS (Premium Edition)
-   ================================================== */
 
 .loading-global-overlay {
     position: fixed;
@@ -2185,7 +2024,6 @@ body.tela-acesso {
     animation: arkhys-logo-float 3s ease-in-out infinite;
 }
 
-/* Anéis Orbitais Estilo "Selo Místico/Spartano" */
 .loading-ring {
     position: absolute;
     width: 100%;
@@ -2252,7 +2090,6 @@ body.tela-acesso {
     animation: arkhys-progress 2s infinite cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* Partículas de "Brasas" */
 .loading-particles span {
     position: absolute;
     width: 4px;
@@ -2271,7 +2108,6 @@ body.tela-acesso {
     100% { transform: translate(calc(var(--i) * 20px - 60px), -80px) scale(0); opacity: 0; }
 }
 
-/* Animações */
 @keyframes arkhys-spin {
     to { transform: rotate(360deg); }
 }
@@ -2294,10 +2130,7 @@ body.tela-acesso {
     0% { left: -100%; }
     100% { left: 100%; }
 }
-/* ==================================================
-   ENTREGAS — espaços de upload por tipo de entrega
-   (modal "Saiba mais") e cofre
-   ================================================== */
+
 .lista-entregas {
     display: flex;
     flex-direction: column;
@@ -2368,9 +2201,6 @@ body.tela-acesso {
     cursor: pointer;
 }
 
-/* ==================================================
-   CELEBRAÇÃO DE CONCLUSÃO — "Tarefa concluída"
-   ================================================== */
 .celebracao-overlay {
     position: fixed;
     inset: 0;
@@ -2492,9 +2322,6 @@ body.tela-acesso {
     100% { opacity: 0; transform: rotate(calc(var(--i) * 30deg)) translateY(-120px) scaleY(1); }
 }
 
-/* ==================================================
-   COFRE — busca e itens fixados
-   ================================================== */
 .barra-busca-cofre {
     position: relative;
     display: flex;
@@ -2527,9 +2354,6 @@ body.tela-acesso {
 .btn-acao.fixar:not(.ativo) { opacity: 0.45; }
 .marca-fixado { font-size: 0.85em; }
 
-/* ==================================================
-   EXPERIÊNCIA MOBILE — comportamento de aplicativo
-   ================================================== */
 html {
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
@@ -2559,14 +2383,12 @@ button:focus:not(:focus-visible),
         overscroll-behavior-y: contain;
     }
 
-    /* Nada de seleção acidental de texto ao segurar um botão */
     .nav-item, .btn-acao, .botao, .aba-tarefa, .aba-item, .celebracao-overlay {
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
     }
 
-    /* Resposta tátil: o item "afunda" em vez de piscar um quadrado azul */
     .botao:active,
     .btn-acao:active,
     .aba-tarefa:active,
@@ -2580,14 +2402,13 @@ button:focus:not(:focus-visible),
         transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), filter 0.16s ease, background 0.2s ease;
     }
 
-    /* Hover não deve "grudar" depois do toque em telas de toque */
     .nav-item:hover, .botao:hover, .btn-acao:hover, .item-tarefa:hover {
         transform: none;
     }
 }
 
 @media (max-width: 768px) {
-    /* Navegação inferior com respiro de app nativo */
+
     .navegacao {
         background: rgba(12, 10, 16, 0.86);
         backdrop-filter: blur(22px) saturate(160%);
@@ -2627,7 +2448,6 @@ button:focus:not(:focus-visible),
         background: rgba(193, 18, 31, 0.22);
     }
 
-    /* Alvos de toque confortáveis (mínimo recomendado ~44px) */
     .btn-acao {
         width: 40px;
         height: 40px;
@@ -2683,5 +2503,702 @@ button:focus:not(:focus-visible),
     .celebracao-faixas i {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
+    }
+}
+
+.lista-passos-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.item-passo-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 0.6rem;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+}
+
+.item-passo-form .item-passo-ordem {
+    font-family: var(--fonte-mono);
+    font-size: 0.75rem;
+    color: var(--texto-terciario);
+    min-width: 1.4rem;
+}
+
+.item-passo-form .item-passo-texto {
+    flex: 1;
+    font-size: 0.88rem;
+    overflow-wrap: anywhere;
+}
+
+.item-passo-acoes {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.item-passo-acoes button {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    color: var(--texto-terciario);
+    transition: color var(--duracao-rapida), background-color var(--duracao-rapida);
+}
+
+.item-passo-acoes button:hover {
+    color: var(--texto-principal);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.item-passo-acoes button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.linha-novo-passo {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.linha-novo-passo .campo-entrada {
+    flex: 1;
+}
+
+.btn-adicionar-passo {
+    flex-shrink: 0;
+    padding: 0 0.9rem;
+    border: 1px solid var(--cor-borda-clara);
+    border-radius: var(--raio-sm);
+    background: var(--cor-superficie-alta);
+    color: var(--texto-principal);
+    font-size: 0.85rem;
+    font-weight: var(--peso-medio);
+    transition: border-color var(--duracao-rapida), background-color var(--duracao-rapida);
+}
+
+.btn-adicionar-passo:hover {
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraco);
+}
+
+.progresso-passos {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.progresso-passos-trilha {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--cor-borda-clara);
+    overflow: hidden;
+}
+
+.progresso-passos-trilha span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--cor-destaque), var(--cor-destaque-hover));
+    transition: width var(--duracao-lenta) var(--curva-suave);
+}
+
+.progresso-passos-trilha-grande {
+    height: 6px;
+    margin: 0.6rem 0 0.9rem;
+}
+
+.progresso-passos-texto {
+    font-family: var(--fonte-mono);
+    font-size: 0.72rem;
+    color: var(--texto-terciario);
+    flex-shrink: 0;
+}
+
+.detalhe-passos-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espaco-xs);
+}
+
+.lista-passos-detalhe {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.passo-detalhe {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--raio-sm);
+    font-size: 0.9rem;
+    transition: background-color var(--duracao-rapida);
+}
+
+.passo-detalhe:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.passo-detalhe-feito span {
+    color: var(--texto-terciario);
+    text-decoration: line-through;
+}
+
+.passo-marcador {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--cor-borda-clara);
+    color: var(--texto-terciario);
+    flex-shrink: 0;
+    transition: color var(--duracao-rapida), border-color var(--duracao-rapida);
+}
+
+.passo-marcador:hover:not(:disabled) {
+    color: var(--cor-destaque);
+    border-color: var(--cor-destaque);
+}
+
+.passo-detalhe-feito .passo-marcador {
+    color: var(--cor-destaque);
+    border-color: var(--cor-destaque);
+}
+
+.barra-visao {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--espaco-sm);
+}
+
+.alternador-visao {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: 999px;
+}
+
+.opcao-visao {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: var(--peso-medio);
+    color: var(--texto-secundario);
+    transition: color var(--duracao-rapida), background-color var(--duracao-rapida);
+}
+
+.opcao-visao:hover {
+    color: var(--texto-principal);
+}
+
+.opcao-visao.ativa {
+    color: var(--texto-principal);
+    background: var(--cor-destaque-fraco);
+    box-shadow: inset 0 0 0 1px var(--cor-destaque);
+}
+
+.quadro-kanban {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--espaco-sm);
+    align-items: start;
+}
+
+.coluna-quadro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+    padding: var(--espaco-sm);
+    min-height: 220px;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+    transition: border-color var(--duracao-media), background-color var(--duracao-media);
+}
+
+.coluna-quadro-corpo.coluna-alvo {
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraquissimo);
+}
+
+.coluna-quadro-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espaco-xs);
+    padding-bottom: var(--espaco-xs);
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.coluna-quadro-topo h3 {
+    font-family: var(--fonte-titulo);
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+.coluna-quadro-contador {
+    font-family: var(--fonte-mono);
+    font-size: 0.72rem;
+    color: var(--texto-terciario);
+    padding: 0.1rem 0.45rem;
+    border: 1px solid var(--cor-borda-clara);
+    border-radius: 999px;
+}
+
+.cartao-quadro {
+    padding: var(--espaco-sm);
+    background: var(--cor-superficie-alta);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    cursor: grab;
+    transition: transform var(--duracao-media) var(--curva-suave),
+                border-color var(--duracao-media),
+                box-shadow var(--duracao-media);
+}
+
+.cartao-quadro:hover {
+    transform: translateY(-2px);
+    border-color: var(--cor-borda-clara);
+    box-shadow: var(--sombra-card);
+}
+
+.cartao-quadro.arrastando {
+    opacity: 0.45;
+    cursor: grabbing;
+}
+
+.cartao-quadro h4 {
+    font-size: 0.92rem;
+    font-weight: var(--peso-semibold);
+    margin-bottom: 4px;
+    overflow-wrap: anywhere;
+}
+
+.cartao-quadro-topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.cartao-quadro-rodape {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espaco-xs);
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--cor-borda);
+}
+
+.btn-mover {
+    font-size: 0.78rem;
+    font-weight: var(--peso-medio);
+    color: var(--cor-destaque);
+}
+
+.btn-mover:hover {
+    color: var(--cor-destaque-hover);
+    text-decoration: underline;
+}
+
+.texto-vazio-pequeno {
+    padding: var(--espaco-md) var(--espaco-xs);
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--texto-terciario);
+    border: 1px dashed var(--cor-borda-clara);
+    border-radius: var(--raio-sm);
+}
+
+.item-passo-texto.passo-feito {
+    color: var(--texto-terciario);
+    text-decoration: line-through;
+}
+
+.coluna-quadro-topo h3 {
+    font-family: var(--fonte-titulo);
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+.coluna-quadro-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+    min-height: 120px;
+    border-radius: var(--raio-sm);
+    transition: background-color var(--duracao-media);
+}
+
+.cartao-quadro-materia {
+    font-family: var(--fonte-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--texto-terciario);
+    overflow-wrap: anywhere;
+}
+
+.cartao-quadro-mover {
+    display: flex;
+    gap: 4px;
+}
+
+.cartao-quadro-mover .btn-mover {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--cor-borda-clara);
+    color: var(--texto-secundario);
+    font-size: 0.9rem;
+    transition: color var(--duracao-rapida), border-color var(--duracao-rapida), background-color var(--duracao-rapida);
+}
+
+.cartao-quadro-mover .btn-mover:hover {
+    color: var(--texto-principal);
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraco);
+}
+
+.secao-rotina {
+    margin-bottom: var(--espaco-xl);
+    animation: surgir-camada var(--duracao-lenta) var(--curva-suave) both;
+}
+
+.titulo-secao-linha {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--espaco-xs);
+}
+
+.titulo-secao-linha .titulo-secao {
+    margin-bottom: var(--espaco-md);
+}
+
+.texto-destaque {
+    color: var(--cor-destaque);
+}
+
+.campo-compacto {
+    width: auto;
+    min-width: 200px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+.seletor-dias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip-dia {
+    min-width: 46px;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--cor-borda-clara);
+    border-radius: 999px;
+    background: var(--cor-superficie);
+    font-size: 0.8rem;
+    font-weight: var(--peso-medio);
+    color: var(--texto-secundario);
+    transition: color var(--duracao-rapida), border-color var(--duracao-rapida), background-color var(--duracao-rapida);
+}
+
+.chip-dia:hover {
+    color: var(--texto-principal);
+    border-color: var(--cor-borda-clara);
+}
+
+.chip-dia.ativo {
+    color: var(--texto-principal);
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque-fraco);
+}
+
+.grade-semana {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--espaco-xs);
+    align-items: start;
+}
+
+.dia-semana {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--espaco-xs);
+    min-height: 140px;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+}
+
+.dia-semana.dia-atual {
+    border-color: var(--cor-destaque);
+    box-shadow: 0 0 18px var(--brilho-destaque);
+}
+
+.dia-semana h3 {
+    font-family: var(--fonte-mono);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--texto-terciario);
+    text-align: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.dia-semana.dia-atual h3 {
+    color: var(--cor-destaque);
+}
+
+.mini-aula {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.55rem;
+    background: var(--cor-superficie-alta);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    transition: transform var(--duracao-rapida) var(--curva-suave), border-color var(--duracao-rapida);
+}
+
+.mini-aula:hover {
+    transform: translateY(-2px);
+    border-color: var(--cor-destaque);
+}
+
+.mini-aula strong {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: var(--peso-semibold);
+    overflow-wrap: anywhere;
+}
+
+.mini-aula em {
+    font-style: normal;
+    font-family: var(--fonte-mono);
+    font-size: 0.68rem;
+    color: var(--texto-terciario);
+}
+
+.mini-aula.registrada {
+    border-color: rgba(193, 18, 31, 0.45);
+    background: var(--cor-destaque-fraquissimo);
+}
+
+.dia-vazio {
+    font-size: 0.72rem;
+    color: var(--texto-terciario);
+    text-align: center;
+    padding: var(--espaco-xs) 0;
+}
+
+.item-rotina {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+    padding: var(--espaco-sm) var(--espaco-md);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+    transition: transform var(--duracao-media) var(--curva-suave), border-color var(--duracao-media);
+}
+
+.item-rotina:hover {
+    transform: translateX(4px);
+    border-color: var(--cor-borda-clara);
+}
+
+.horario-rotina {
+    display: grid;
+    place-items: center;
+    min-width: 62px;
+    padding: 0.4rem 0.5rem;
+    font-family: var(--fonte-mono);
+    font-size: 0.9rem;
+    color: var(--texto-principal);
+    background: var(--cor-superficie-alta);
+    border: 1px solid var(--cor-borda-clara);
+    border-radius: var(--raio-sm);
+    flex-shrink: 0;
+}
+
+.info-rotina {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-rotina strong {
+    display: block;
+    font-size: 0.98rem;
+    font-weight: var(--peso-semibold);
+    overflow-wrap: anywhere;
+}
+
+.info-rotina p {
+    font-size: 0.82rem;
+    color: var(--texto-secundario);
+    overflow-wrap: anywhere;
+}
+
+.acoes-rotina {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.registro-cabecalho {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+    padding: var(--espaco-sm);
+    margin-bottom: var(--espaco-md);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+}
+
+.registro-cabecalho-icone {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--cor-destaque);
+    background: var(--cor-destaque-fraco);
+    flex-shrink: 0;
+}
+
+.dica-colar {
+    margin-top: 6px;
+    font-size: 0.75rem;
+}
+
+.item-diario {
+    padding: var(--espaco-md);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+    transition: border-color var(--duracao-media), box-shadow var(--duracao-media);
+}
+
+.item-diario:hover {
+    border-color: var(--cor-borda-clara);
+    box-shadow: var(--sombra-card);
+}
+
+.diario-topo {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--espaco-sm);
+    margin-bottom: var(--espaco-xs);
+}
+
+.diario-topo strong {
+    font-size: 0.98rem;
+    font-weight: var(--peso-semibold);
+}
+
+.diario-bloco {
+    margin-top: var(--espaco-xs);
+}
+
+.diario-bloco span {
+    display: block;
+    font-family: var(--fonte-mono);
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--texto-terciario);
+    margin-bottom: 2px;
+}
+
+.diario-bloco p {
+    font-size: 0.9rem;
+    color: var(--texto-secundario);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.diario-anexos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: var(--espaco-sm);
+}
+
+.diario-anexo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.78rem;
+    color: var(--texto-secundario);
+    background: var(--cor-superficie-alta);
+    border: 1px solid var(--cor-borda);
+    border-radius: 999px;
+    transition: color var(--duracao-rapida), border-color var(--duracao-rapida);
+}
+
+.diario-anexo:hover {
+    color: var(--texto-principal);
+    border-color: var(--cor-destaque);
+}
+
+@media (max-width: 900px) {
+    .quadro-kanban {
+        grid-template-columns: 1fr;
+    }
+
+    .grade-semana {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .barra-visao {
+        justify-content: stretch;
+    }
+
+    .alternador-visao {
+        width: 100%;
+    }
+
+    .opcao-visao {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .item-rotina {
+        flex-wrap: wrap;
+    }
+
+    .campo-compacto {
+        width: 100%;
     }
 }
