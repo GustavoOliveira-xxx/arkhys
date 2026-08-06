@@ -1,6 +1,7 @@
 import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica, nomeArquivoSeguro } from './midia.js';
 import { concederXp } from './xp-service.js';
+import { celebrarConclusao } from './celebracao.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -236,10 +237,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error) {
             alert('Erro ao salvar: ' + error.message);
         } else {
+            const eraEdicao = !!itemEditando;
+            const nomeSalvo = payload.nome || '';
             itemEditando = null;
             formUnificado.reset();
             exibirView('listagem');
             carregarItens();
+            celebrarConclusao({
+                texto: eraEdicao ? 'Cadastro atualizado' : 'Cadastro criado',
+                titulo: nomeSalvo,
+                duracao: 1400
+            });
         }
     };
 });

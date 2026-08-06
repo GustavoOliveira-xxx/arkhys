@@ -2,6 +2,7 @@ import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
 import { celebrarConclusao } from './celebracao.js';
 import { listarAnexosDaTarefa, listarEntregasDaTarefa, listarTiposEntrega, enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
+import { podeConcluir, motivoBloqueioConclusao } from './passos.js';
 
 let overlayAtual = null;
 
@@ -123,16 +124,33 @@ function montarLinhaFerramentas(tarefa, ferramentas = []) {
     </div>`;
 }
 
+function nomesDosMembros(tarefa, membros = []) {
+    return (tarefa.membros_ids || [])
+        .map(id => membros.find(m => m.id === id)?.nome)
+        .filter(Boolean);
+}
+
+// "Fazer no nome de:" — nomes do grupo ou o nome do usuário da conta.
+function textoFazerNoNomeDe(tarefa, membros, nomeUsuario) {
+    if (tarefa.modalidade === 'grupo') {
+        const nomes = nomesDosMembros(tarefa, membros);
+        return nomes.length ? nomes.join(', ') : 'Grupo (sem membros selecionados)';
+    }
+    return `${nomeUsuario} (Individual)`;
+}
+
 export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     const { materias = [], membros = [], ferramentas = [], aoEditar, linkEditar, aoConcluir, aoExcluir, aoAlternarPasso } = opcoes;
 
     fecharDetalhes();
 
+    const { data: { user: usuarioAtual } } = await supabase.auth.getUser();
+    const nomeUsuario = usuarioAtual?.user_metadata?.nome_completo?.trim() || 'Você';
+
     const materia = materias.find(m => m.id === tarefa.materia_id);
     const st = calcularStatus(tarefa);
-    const modalidadeTexto = tarefa.modalidade === 'grupo'
-        ? `<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-membros"></use></svg> Em grupo (${(tarefa.membros_ids || []).length} membro(s))`
-        : '<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-individual"></use></svg> Individual';
+    const iconeModalidade = tarefa.modalidade === 'grupo' ? 'icon-membros' : 'icon-individual';
+    const modalidadeTexto = `<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#${iconeModalidade}"></use></svg> ${textoFazerNoNomeDe(tarefa, membros, nomeUsuario)}`;
 
     const iconeMateria = materia?.icone_url
         ? `<img src="${urlPublicaMidia(materia.icone_url)}" alt="${materia.nome}">`
@@ -173,7 +191,7 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                     <span class="detalhe-valor"><svg class="icon-svg icon-svg-sm icon-${ICONE_DIFICULDADE[tarefa.dificuldade] || 'dificuldade-medio'}"><use href="assets/icones/arkhys-icons.svg#icon-${ICONE_DIFICULDADE[tarefa.dificuldade] || 'dificuldade-medio'}"></use></svg> ${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span>
                 </div>
                 <div class="detalhe-linha">
-                    <span class="detalhe-rotulo">Modalidade</span>
+                    <span class="detalhe-rotulo">Fazer no nome de</span>
                     <span class="detalhe-valor">${modalidadeTexto}</span>
                 </div>
                 ${montarLinhaMembros(tarefa, membros)}
@@ -219,7 +237,22 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
 
     const botaoConcluir = overlay.querySelector('[data-acao="concluir"]');
     if (botaoConcluir && aoConcluir) {
-        botaoConcluir.addEventListener('click', () => aoConcluir(tarefa));
+        const atualizarBotaoConcluir = (tarefaAtual) => {
+            if (tarefaAtual.concluida) return;
+            const bloqueio = motivoBloqueioConclusao(tarefaAtual);
+            botaoConcluir.disabled = !!bloqueio;
+            botaoConcluir.classList.toggle('botao-bloqueado', !!bloqueio);
+            botaoConcluir.title = bloqueio || '';
+        };
+        atualizarBotaoConcluir(tarefa);
+        overlay.atualizarBotaoConcluir = atualizarBotaoConcluir;
+        botaoConcluir.addEventListener('click', () => {
+            if (!tarefa.concluida && !podeConcluir(tarefa)) {
+                alert('⚠️ ' + motivoBloqueioConclusao(tarefa));
+                return;
+            }
+            aoConcluir(tarefa);
+        });
     }
 
     const botaoExcluir = overlay.querySelector('[data-acao="excluir"]');
@@ -236,6 +269,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                 botao.disabled = false;
                 if (!atualizados) return;
 
+                tarefa.subtarefas = atualizados;
+                overlay.atualizarBotaoConcluir?.(tarefa);
+
                 const secao = overlay.querySelector('[data-secao="passos"]');
                 if (!secao) return;
 
@@ -250,7 +286,7 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     ligarBotoesPasso();
 
     overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
-    overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas));
+    overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas, nomeUsuario));
 
     await renderizarEntregas(overlay, tarefa);
 
@@ -392,11 +428,12 @@ function nomeArquivoImpressao(tarefa, materia) {
     return `${nomeMateria} ${dataCurta} Arkhys`;
 }
 
-async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
+async function imprimirTarefa(tarefa, materia, membros, ferramentas, nomeUsuario = 'Você') {
     const st = calcularStatus(tarefa);
-    const nomesMembros = tarefa.modalidade === 'grupo'
-        ? (tarefa.membros_ids || []).map(id => membros.find(m => m.id === id)?.nome).filter(Boolean)
-        : [];
+    const nomesMembros = tarefa.modalidade === 'grupo' ? nomesDosMembros(tarefa, membros) : [];
+    const fazerNoNomeDe = tarefa.modalidade === 'grupo'
+        ? (nomesMembros.length ? nomesMembros : ['Grupo (sem membros selecionados)'])
+        : [`${nomeUsuario} (Individual)`];
     const nomesFerramentas = (tarefa.ferramentas_ids || []).map(id => ferramentas.find(f => f.id === id)?.nome).filter(Boolean);
 
     const janela = window.open('', '_blank', 'width=800,height=900');
@@ -467,8 +504,7 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
             <div class="linha"><span class="rotulo">Matéria</span><span>${materia ? materia.nome : 'Sem matéria'}</span></div>
             <div class="linha"><span class="rotulo">Entrega</span><span>${formatarData(tarefa.data_entrega)}</span></div>
             <div class="linha"><span class="rotulo">Dificuldade</span><span>${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span></div>
-            <div class="linha"><span class="rotulo">Modalidade</span><span>${tarefa.modalidade === 'grupo' ? 'Em grupo' : 'Individual'}</span></div>
-            ${nomesMembros.length ? `<div class="linha"><span class="rotulo">Membros</span><ul>${nomesMembros.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
+            <div class="linha"><span class="rotulo">Fazer no nome de</span>${fazerNoNomeDe.length > 1 ? `<ul>${fazerNoNomeDe.map(n => `<li>${n}</li>`).join('')}</ul>` : `<span>${fazerNoNomeDe[0]}</span>`}</div>
             ${nomesFerramentas.length ? `<div class="linha"><span class="rotulo">Ferramentas</span><ul>${nomesFerramentas.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
             ${passosDaTarefa(tarefa).length ? `<div class="linha"><span class="rotulo">Passos</span><ul>${passosDaTarefa(tarefa).map(passo => `<li>${passo.feita ? '[x]' : '[ ]'} ${passo.texto}</li>`).join('')}</ul></div>` : ''}
             ${anexoHtml}

@@ -3,6 +3,7 @@ import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { mapaAnexosPorTarefa } from './arquivos-service.js';
 import { celebrarConclusao } from './celebracao.js';
+import { validarConclusao } from './passos.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -235,6 +236,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function alternarConclusao(id, estadoAtual) {
         const novoEstado = !estadoAtual;
+        const tarefaAlvo = tarefasDoDia.find(t => String(t.id) === String(id));
+        if (novoEstado && tarefaAlvo && !validarConclusao(tarefaAlvo)) return;
         const { error } = await supabase
             .from('tarefas')
             .update({ concluida: novoEstado })

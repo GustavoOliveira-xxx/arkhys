@@ -5,6 +5,7 @@ import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { celebrarConclusao } from './celebracao.js';
 import { concederXpDiaPerfeito, concederXpConclusaoTarefa, NOME_DIFICULDADE } from './xp-service.js';
 import { mostrarCarregamento, esconderCarregamento } from './loading.js';
+import { validarConclusao } from './passos.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -232,6 +233,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         return '📝';
     }
 
+    const nomeUsuario = user.user_metadata?.nome_completo?.trim() || 'Você';
+
+    function rotuloGrupoData(dataISO) {
+        if (!dataISO || dataISO === 'sem-data') return 'Sem data definida';
+
+        const data = new Date(dataISO + 'T00:00:00');
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const diffDias = Math.round((data - hoje) / 86400000);
+
+        const curta = data.toLocaleDateString('pt-BR');
+        if (diffDias === 0) return `Hoje · ${curta}`;
+        if (diffDias === 1) return `Amanhã · ${curta}`;
+        if (diffDias === -1) return `Ontem · ${curta}`;
+
+        const extenso = data.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+        return extenso.charAt(0).toUpperCase() + extenso.slice(1);
+    }
+
     function badgeAnexo(tarefa) {
         const anexos = anexosMap[tarefa.id] || [];
         if (anexos.length === 0) return '';
@@ -286,13 +306,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        lista.innerHTML = visiveis.map(t => {
+        const cartaoTarefa = (t) => {
             const materia = materias.find(m => m.id === t.materia_id);
             const st = calcularStatus(t);
             const dataFormatada = new Date(t.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR');
             const modalidadeTexto = t.modalidade === 'grupo'
                 ? `👥 Grupo (${(t.membros_ids || []).length})`
-                : '👤 Individual';
+                : `👤 ${nomeUsuario} (Individual)`;
 
             return `
                 <div class="item-tarefa ${t.concluida ? 'concluida' : ''}" data-id="${t.id}">
@@ -310,7 +330,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
             `;
-        }).join('');
+        };
+
+        // Agrupa por data de entrega (estilo Microsoft Teams).
+        const grupos = new Map();
+        visiveis
+            .slice()
+            .sort((a, b) => String(a.data_entrega).localeCompare(String(b.data_entrega)))
+            .forEach(t => {
+                const chave = t.data_entrega || 'sem-data';
+                if (!grupos.has(chave)) grupos.set(chave, []);
+                grupos.get(chave).push(t);
+            });
+
+        lista.innerHTML = Array.from(grupos.entries()).map(([data, itens], indice) => `
+            <section class="grupo-data" style="--atraso: ${indice * 60}ms">
+                <header class="grupo-data-cabecalho">
+                    <h3>${rotuloGrupoData(data)}</h3>
+                    <span class="grupo-data-contador">${itens.length}</span>
+                </header>
+                <div class="grupo-data-itens">${itens.map(cartaoTarefa).join('')}</div>
+            </section>
+        `).join('');
     }
 
     function colunaDaTarefa(tarefa) {
@@ -371,27 +412,69 @@ document.addEventListener('DOMContentLoaded', async () => {
         ativarArrastarSoltar();
     }
 
+    let idCartaoRecemMovido = null;
+
+    function pulsoDeSoltura(corpo, evento) {
+        const retangulo = corpo.getBoundingClientRect();
+        const pulso = document.createElement('span');
+        pulso.className = 'pulso-soltura';
+        pulso.style.left = `${evento.clientX - retangulo.left}px`;
+        pulso.style.top = `${evento.clientY - retangulo.top}px`;
+        corpo.appendChild(pulso);
+        setTimeout(() => pulso.remove(), 620);
+    }
+
     function ativarArrastarSoltar() {
         quadro.querySelectorAll('.cartao-quadro').forEach(cartao => {
+            if (cartao.dataset.id === idCartaoRecemMovido) {
+                cartao.classList.add('cartao-aterrissando');
+                cartao.addEventListener('animationend', () => cartao.classList.remove('cartao-aterrissando'), { once: true });
+            }
+
             cartao.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', cartao.dataset.id);
                 e.dataTransfer.effectAllowed = 'move';
                 cartao.classList.add('arrastando');
+                quadro.classList.add('quadro-arrastando');
             });
-            cartao.addEventListener('dragend', () => cartao.classList.remove('arrastando'));
+            cartao.addEventListener('dragend', () => {
+                cartao.classList.remove('arrastando');
+                quadro.classList.remove('quadro-arrastando');
+                quadro.querySelectorAll('.coluna-alvo').forEach(el => el.classList.remove('coluna-alvo'));
+            });
         });
 
         quadro.querySelectorAll('.coluna-quadro-corpo').forEach(corpo => {
-            corpo.addEventListener('dragover', (e) => {
+            let contadorEntradas = 0;
+
+            corpo.addEventListener('dragenter', (e) => {
                 e.preventDefault();
+                contadorEntradas += 1;
                 corpo.classList.add('coluna-alvo');
             });
-            corpo.addEventListener('dragleave', () => corpo.classList.remove('coluna-alvo'));
+            corpo.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                corpo.classList.add('coluna-alvo');
+            });
+            corpo.addEventListener('dragleave', () => {
+                contadorEntradas = Math.max(0, contadorEntradas - 1);
+                if (contadorEntradas === 0) corpo.classList.remove('coluna-alvo');
+            });
             corpo.addEventListener('drop', async (e) => {
                 e.preventDefault();
+                contadorEntradas = 0;
                 corpo.classList.remove('coluna-alvo');
+                corpo.classList.add('coluna-recebeu');
+                pulsoDeSoltura(corpo, e);
+                setTimeout(() => corpo.classList.remove('coluna-recebeu'), 520);
+                quadro.classList.remove('quadro-arrastando');
+
                 const tarefa = tarefas.find(t => String(t.id) === e.dataTransfer.getData('text/plain'));
-                if (tarefa) await moverParaColuna(tarefa, corpo.dataset.coluna);
+                if (!tarefa) return;
+                idCartaoRecemMovido = String(tarefa.id);
+                await moverParaColuna(tarefa, corpo.dataset.coluna);
+                setTimeout(() => { idCartaoRecemMovido = null; }, 1200);
             });
         });
     }
@@ -400,6 +483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (colunaDaTarefa(tarefa) === coluna) return;
 
         if (coluna === 'concluido') {
+            if (!validarConclusao(tarefa)) return;
             await alternarConclusao(tarefa);
             return;
         }
@@ -644,6 +728,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function alternarConclusao(tarefa) {
         const novoEstado = !tarefa.concluida;
+        if (novoEstado && !validarConclusao(tarefa)) return;
         const { error } = await supabase
             .from('tarefas')
             .update({ concluida: novoEstado, status_quadro: novoEstado ? 'concluido' : 'fazendo' })
@@ -677,8 +762,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const { error } = await supabase.from('tarefas').delete().eq('id', tarefa.id);
-        if (error) alert('Erro ao excluir: ' + error.message);
-        else carregarTarefas();
+        if (error) {
+            alert('Erro ao excluir: ' + error.message);
+            return;
+        }
+        await carregarTarefas();
+        celebrarConclusao({ texto: 'Atividade excluída', titulo: tarefa.titulo, duracao: 1400 });
     }
 
     async function alternarPasso(tarefa, idPasso) {
@@ -831,8 +920,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         botaoSalvar.disabled = false;
         esconderCarregamento();
         modal.hidden = true;
+        const tituloSalvo = dadosTarefa.titulo;
+        const eraEdicao = !!idAtual;
         resetarFormulario();
-        carregarTarefas();
+        await carregarTarefas();
+        celebrarConclusao({
+            texto: eraEdicao ? 'Atividade atualizada' : 'Atividade cadastrada',
+            titulo: tituloSalvo
+        });
     });
 
     await carregarMaterias();
