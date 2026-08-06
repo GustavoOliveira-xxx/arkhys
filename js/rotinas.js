@@ -326,15 +326,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const eraEdicao = !!idRotina.value;
         fecharModalRotina();
         await carregarRotinas();
         renderizarTudo();
-        celebrarConclusao({
-            texto: eraEdicao ? 'Rotina atualizada' : 'Rotina criada',
-            titulo: dados.titulo,
-            duracao: 1400
-        });
     });
 
     btnExcluirRotina.addEventListener('click', async () => {

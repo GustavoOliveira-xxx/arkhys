@@ -3,7 +3,6 @@ import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { mapaAnexosPorTarefa } from './arquivos-service.js';
 import { celebrarConclusao } from './celebracao.js';
-import { podeConcluirTarefa, avisoPassosPendentes } from './passos.js';
 import { concederXpDoDia, concederXpDiaPerfeito, concederXpConclusaoTarefa, buscarNiveis, calcularProgresso } from './xp-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -110,12 +109,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function alternarConclusao(tarefa) {
         const novoEstado = !tarefa.concluida;
-
-        if (novoEstado && !podeConcluirTarefa(tarefa)) {
-            alert(avisoPassosPendentes(tarefa));
-            return;
-        }
-
         const { error } = await supabase.from('tarefas').update({ concluida: novoEstado }).eq('id', tarefa.id);
         if (error) { alert('Erro ao atualizar: ' + error.message); return; }
 
