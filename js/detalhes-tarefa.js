@@ -2,6 +2,7 @@ import { supabase } from './supabase-config.js';
 import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoArquivo, urlsAssinadasEmLote, abrirVisualizadorArquivo } from './midia.js';
 import { celebrarConclusao } from './celebracao.js';
 import { listarAnexosDaTarefa, listarEntregasDaTarefa, listarTiposEntrega, enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
+import { podeConcluirTarefa, avisoPassosPendentes, nomeResponsavel } from './passos.js';
 
 let overlayAtual = null;
 
@@ -130,9 +131,15 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
 
     const materia = materias.find(m => m.id === tarefa.materia_id);
     const st = calcularStatus(tarefa);
-    const modalidadeTexto = tarefa.modalidade === 'grupo'
-        ? `<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-membros"></use></svg> Em grupo (${(tarefa.membros_ids || []).length} membro(s))`
-        : '<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-individual"></use></svg> Individual';
+    const { data: { user: usuarioAtual } } = await supabase.auth.getUser();
+    const nomeUsuario = nomeResponsavel(usuarioAtual);
+    const nomesResponsaveis = tarefa.modalidade === 'grupo'
+        ? (tarefa.membros_ids || []).map(id => membros.find(m => m.id === id)?.nome).filter(Boolean)
+        : [];
+    const responsavelTexto = tarefa.modalidade === 'grupo'
+        ? `<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-membros"></use></svg> ${nomesResponsaveis.length ? nomesResponsaveis.join(', ') : `Grupo (${(tarefa.membros_ids || []).length} membro(s))`}`
+        : `<svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#icon-individual"></use></svg> ${nomeUsuario} (Individual)`;
+    const conclusaoBloqueada = !tarefa.concluida && !podeConcluirTarefa(tarefa);
 
     const iconeMateria = materia?.icone_url
         ? `<img src="${urlPublicaMidia(materia.icone_url)}" alt="${materia.nome}">`
@@ -173,8 +180,8 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
                     <span class="detalhe-valor"><svg class="icon-svg icon-svg-sm icon-${ICONE_DIFICULDADE[tarefa.dificuldade] || 'dificuldade-medio'}"><use href="assets/icones/arkhys-icons.svg#icon-${ICONE_DIFICULDADE[tarefa.dificuldade] || 'dificuldade-medio'}"></use></svg> ${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span>
                 </div>
                 <div class="detalhe-linha">
-                    <span class="detalhe-rotulo">Modalidade</span>
-                    <span class="detalhe-valor">${modalidadeTexto}</span>
+                    <span class="detalhe-rotulo">Fazer no nome de</span>
+                    <span class="detalhe-valor">${responsavelTexto}</span>
                 </div>
                 ${montarLinhaMembros(tarefa, membros)}
                 ${montarLinhaFerramentas(tarefa, ferramentas)}
@@ -194,7 +201,7 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
 
             <div class="acoes-form">
                 ${(aoEditar || linkEditar) ? `<button type="button" class="botao botao-primario w-full" data-acao="editar"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-editar"></use></svg> Editar</button>` : ''}
-                ${aoConcluir ? `<button type="button" class="botao botao-secundario w-full" data-acao="concluir">${tarefa.concluida ? '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-reabrir"></use></svg> Reabrir' : '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-concluir"></use></svg> Concluir'}</button>` : ''}
+                ${aoConcluir ? `<button type="button" class="botao botao-secundario w-full" data-acao="concluir" ${conclusaoBloqueada ? `disabled title="${avisoPassosPendentes(tarefa)}"` : ''}>${tarefa.concluida ? '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-reabrir"></use></svg> Reabrir' : '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-concluir"></use></svg> Concluir'}</button>` : ''}
                 ${aoExcluir ? `<button type="button" class="botao botao-perigo w-full" data-acao="excluir"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-excluir"></use></svg> Excluir</button>` : ''}
             </div>
         </div>
@@ -250,7 +257,7 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
     ligarBotoesPasso();
 
     overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
-    overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas));
+    overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas, nomeUsuario));
 
     await renderizarEntregas(overlay, tarefa);
 
@@ -392,7 +399,7 @@ function nomeArquivoImpressao(tarefa, materia) {
     return `${nomeMateria} ${dataCurta} Arkhys`;
 }
 
-async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
+async function imprimirTarefa(tarefa, materia, membros, ferramentas, nomeUsuario = 'Responsável') {
     const st = calcularStatus(tarefa);
     const nomesMembros = tarefa.modalidade === 'grupo'
         ? (tarefa.membros_ids || []).map(id => membros.find(m => m.id === id)?.nome).filter(Boolean)
@@ -467,8 +474,9 @@ async function imprimirTarefa(tarefa, materia, membros, ferramentas) {
             <div class="linha"><span class="rotulo">Matéria</span><span>${materia ? materia.nome : 'Sem matéria'}</span></div>
             <div class="linha"><span class="rotulo">Entrega</span><span>${formatarData(tarefa.data_entrega)}</span></div>
             <div class="linha"><span class="rotulo">Dificuldade</span><span>${NOME_DIFICULDADE_LOCAL[tarefa.dificuldade] || 'Médio'}</span></div>
-            <div class="linha"><span class="rotulo">Modalidade</span><span>${tarefa.modalidade === 'grupo' ? 'Em grupo' : 'Individual'}</span></div>
-            ${nomesMembros.length ? `<div class="linha"><span class="rotulo">Membros</span><ul>${nomesMembros.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
+            <div class="linha"><span class="rotulo">Fazer no nome de</span>${tarefa.modalidade === 'grupo'
+                ? `<ul>${(nomesMembros.length ? nomesMembros : ['Membros não informados']).map(n => `<li>${n}</li>`).join('')}</ul>`
+                : `<span>${nomeUsuario} (Individual)</span>`}</div>
             ${nomesFerramentas.length ? `<div class="linha"><span class="rotulo">Ferramentas</span><ul>${nomesFerramentas.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
             ${passosDaTarefa(tarefa).length ? `<div class="linha"><span class="rotulo">Passos</span><ul>${passosDaTarefa(tarefa).map(passo => `<li>${passo.feita ? '[x]' : '[ ]'} ${passo.texto}</li>`).join('')}</ul></div>` : ''}
             ${anexoHtml}

@@ -5,6 +5,7 @@ import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { celebrarConclusao } from './celebracao.js';
 import { concederXpDiaPerfeito, concederXpConclusaoTarefa, NOME_DIFICULDADE } from './xp-service.js';
 import { mostrarCarregamento, esconderCarregamento } from './loading.js';
+import { podeConcluirTarefa, avisoPassosPendentes } from './passos.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let abaAtiva = 'pendentes';
     let visaoAtiva = localStorage.getItem('arkhys_visao_tarefas') === 'quadro' ? 'quadro' : 'lista';
     let passos = [];
+    let ultimaTarefaMovida = null;
 
     const COLUNAS_QUADRO = [
         { id: 'a_fazer', nome: 'Para Fazer' },
@@ -270,6 +272,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         return emoji ? ` • ${emoji} ${NOME_DIFICULDADE[tarefa.dificuldade]}` : '';
     }
 
+    function rotuloGrupoData(dataISO) {
+        const data = new Date(dataISO + 'T00:00:00');
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const diferenca = Math.round((data - hoje) / 86400000);
+        const diaSemana = data.toLocaleDateString('pt-BR', { weekday: 'long' });
+
+        let titulo = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+        if (diferenca === -1) titulo = 'Ontem';
+        if (diferenca === 0) titulo = 'Hoje';
+        if (diferenca === 1) titulo = 'Amanhã';
+
+        return {
+            titulo,
+            data: data.toLocaleDateString('pt-BR'),
+            atrasada: diferenca < 0
+        };
+    }
+
+    function cartaoLista(t) {
+        const materia = materias.find(m => m.id === t.materia_id);
+        const st = calcularStatus(t);
+        const dataFormatada = new Date(t.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR');
+        const modalidadeTexto = t.modalidade === 'grupo'
+            ? `👥 Grupo (${(t.membros_ids || []).length})`
+            : '👤 Individual';
+        const bloqueada = !t.concluida && !podeConcluirTarefa(t);
+
+        return `
+            <div class="item-tarefa ${t.concluida ? 'concluida' : ''}" data-id="${t.id}">
+                <div class="item-icone ${materia?.icone_url ? 'com-imagem' : ''}">${iconeDoItem(materia)}</div>
+                <div class="item-conteudo">
+                    <h4>${t.titulo}</h4>
+                    <p>${materia ? materia.nome + ' • ' : ''}${dataFormatada} • ${modalidadeTexto}${badgeDificuldade(t)}${badgeAnexo(t)}</p>
+                    ${barraProgressoPassos(t)}
+                </div>
+                <span class="status ${st.classe}">${st.texto}</span>
+                <div class="item-acoes">
+                    <button class="btn-acao concluir ${bloqueada ? 'acao-bloqueada' : ''}" title="${t.concluida ? 'Reabrir' : bloqueada ? 'Marque todos os passos para concluir' : 'Concluir'}">${t.concluida ? '↺' : '✓'}</button>
+                    <button type="button" class="btn-saiba-mais" data-acao="saibamais">Saiba mais</button>
+                    <button class="btn-acao excluir" title="Excluir">🗑️</button>
+                </div>
+            </div>
+        `;
+    }
+
     function renderizarLista() {
         let visiveis = [...tarefas];
 
@@ -286,29 +334,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        lista.innerHTML = visiveis.map(t => {
-            const materia = materias.find(m => m.id === t.materia_id);
-            const st = calcularStatus(t);
-            const dataFormatada = new Date(t.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR');
-            const modalidadeTexto = t.modalidade === 'grupo'
-                ? `👥 Grupo (${(t.membros_ids || []).length})`
-                : '👤 Individual';
+        const grupos = new Map();
+        visiveis.forEach(t => {
+            const chave = t.data_entrega || 'sem-data';
+            if (!grupos.has(chave)) grupos.set(chave, []);
+            grupos.get(chave).push(t);
+        });
+
+        const chavesOrdenadas = [...grupos.keys()].sort((a, b) => {
+            if (a === 'sem-data') return 1;
+            if (b === 'sem-data') return -1;
+            return a < b ? -1 : 1;
+        });
+
+        lista.innerHTML = chavesOrdenadas.map(chave => {
+            const itens = grupos.get(chave);
+            const info = chave === 'sem-data'
+                ? { titulo: 'Sem data definida', data: '—', atrasada: false }
+                : rotuloGrupoData(chave);
 
             return `
-                <div class="item-tarefa ${t.concluida ? 'concluida' : ''}" data-id="${t.id}">
-                    <div class="item-icone ${materia?.icone_url ? 'com-imagem' : ''}">${iconeDoItem(materia)}</div>
-                    <div class="item-conteudo">
-                        <h4>${t.titulo}</h4>
-                        <p>${materia ? materia.nome + ' • ' : ''}${dataFormatada} • ${modalidadeTexto}${badgeDificuldade(t)}${badgeAnexo(t)}</p>
-                        ${barraProgressoPassos(t)}
-                    </div>
-                    <span class="status ${st.classe}">${st.texto}</span>
-                    <div class="item-acoes">
-                        <button class="btn-acao concluir" title="${t.concluida ? 'Reabrir' : 'Concluir'}">${t.concluida ? '↺' : '✓'}</button>
-                        <button type="button" class="btn-saiba-mais" data-acao="saibamais">Saiba mais</button>
-                        <button class="btn-acao excluir" title="Excluir">🗑️</button>
-                    </div>
-                </div>
+                <section class="grupo-data ${info.atrasada ? 'grupo-data-atrasada' : ''}">
+                    <header class="grupo-data-topo">
+                        <h3>${info.titulo}</h3>
+                        <span class="grupo-data-info">${info.data} • ${itens.length} ${itens.length === 1 ? 'atividade' : 'atividades'}</span>
+                    </header>
+                    <div class="grupo-data-itens">${itens.map(cartaoLista).join('')}</div>
+                </section>
             `;
         }).join('');
     }
@@ -337,7 +389,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const proxima = COLUNAS_QUADRO[indice + 1];
 
                 return `
-                    <article class="cartao-quadro" draggable="true" data-id="${t.id}">
+                    <article class="cartao-quadro ${ultimaTarefaMovida === t.id ? 'cartao-chegou' : ''}" draggable="true" data-id="${t.id}">
                         <header class="cartao-quadro-topo">
                             <span class="cartao-quadro-materia">${materia ? materia.nome : 'Sem matéria'}</span>
                             <span class="status ${st.classe}">${st.texto}</span>
@@ -369,6 +421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
 
         ativarArrastarSoltar();
+        ultimaTarefaMovida = null;
     }
 
     function ativarArrastarSoltar() {
@@ -390,8 +443,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             corpo.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 corpo.classList.remove('coluna-alvo');
+                corpo.classList.add('coluna-recebeu');
+                setTimeout(() => corpo.classList.remove('coluna-recebeu'), 620);
                 const tarefa = tarefas.find(t => String(t.id) === e.dataTransfer.getData('text/plain'));
-                if (tarefa) await moverParaColuna(tarefa, corpo.dataset.coluna);
+                if (tarefa) {
+                    ultimaTarefaMovida = tarefa.id;
+                    await moverParaColuna(tarefa, corpo.dataset.coluna);
+                }
             });
         });
     }
@@ -434,6 +492,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         abrirDetalhes(tarefa);
     });
 
+    function atualizarDicaVisao() {
+        const dica = document.getElementById('dicaVisao');
+        if (!dica) return;
+        dica.textContent = visaoAtiva === 'quadro'
+            ? 'No quadro você vê tudo de uma vez: para fazer, fazendo e concluídas.'
+            : 'A lista continua sendo a visão padrão do Arkhys, agrupada por data de entrega.';
+    }
+
     function renderizarVisao() {
         const ehQuadro = visaoAtiva === 'quadro';
         lista.hidden = ehQuadro;
@@ -450,6 +516,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         visaoAtiva = opcao.dataset.visao;
         localStorage.setItem('arkhys_visao_tarefas', visaoAtiva);
+
+        if (visaoAtiva === 'lista') {
+            abaAtiva = 'pendentes';
+            abasTarefas.querySelectorAll('.aba-tarefa').forEach(el => el.classList.toggle('ativa', el.dataset.status === 'pendentes'));
+        }
+        atualizarDicaVisao();
         alternadorVisao.querySelectorAll('.opcao-visao').forEach(el => el.classList.toggle('ativa', el.dataset.visao === visaoAtiva));
         renderizarVisao();
     });
@@ -644,6 +716,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function alternarConclusao(tarefa) {
         const novoEstado = !tarefa.concluida;
+
+        if (novoEstado && !podeConcluirTarefa(tarefa)) {
+            alert(avisoPassosPendentes(tarefa));
+            return;
+        }
+
         const { error } = await supabase
             .from('tarefas')
             .update({ concluida: novoEstado, status_quadro: novoEstado ? 'concluido' : 'fazendo' })
@@ -832,6 +910,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         esconderCarregamento();
         modal.hidden = true;
         resetarFormulario();
+        celebrarConclusao({
+            texto: idAtual ? 'Atividade atualizada' : 'Atividade criada',
+            titulo: dadosTarefa.titulo,
+            duracao: 1500
+        });
         carregarTarefas();
     });
 
@@ -840,5 +923,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarFerramentas();
     await carregarTiposEntrega();
     alternadorVisao.querySelectorAll('.opcao-visao').forEach(el => el.classList.toggle('ativa', el.dataset.visao === visaoAtiva));
+    atualizarDicaVisao();
     await carregarTarefas();
 });

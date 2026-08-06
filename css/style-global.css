@@ -3202,3 +3202,116 @@ button:focus:not(:focus-visible),
         width: 100%;
     }
 }
+
+.grupo-data {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+    margin-bottom: var(--espaco-md);
+    animation: surgir-grupo var(--duracao-media) var(--curva-suave) both;
+}
+
+.grupo-data-topo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espaco-xs);
+    padding: 0 2px 6px;
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.grupo-data-topo h3 {
+    font-family: var(--fonte-titulo);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.grupo-data-info {
+    font-family: var(--fonte-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texto-terciario);
+}
+
+.grupo-data-atrasada .grupo-data-topo {
+    border-bottom-color: var(--cor-destaque);
+}
+
+.grupo-data-atrasada .grupo-data-topo h3 {
+    color: var(--cor-destaque);
+}
+
+.grupo-data-itens {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+}
+
+@keyframes surgir-grupo {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.btn-acao.acao-bloqueada {
+    opacity: 0.45;
+}
+
+.cartao-quadro.arrastando {
+    transform: rotate(-1.4deg) scale(0.98);
+    box-shadow: var(--sombra-card);
+}
+
+.coluna-quadro-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-xs);
+    border: 1px dashed transparent;
+    border-radius: var(--raio-sm);
+    padding: 4px;
+    transition: border-color var(--duracao-rapida), background-color var(--duracao-rapida), box-shadow var(--duracao-rapida);
+}
+
+.coluna-quadro-corpo.coluna-alvo {
+    box-shadow: inset 0 0 0 1px var(--cor-destaque);
+    animation: pulsar-coluna 1.1s ease-in-out infinite;
+}
+
+.coluna-quadro-corpo.coluna-alvo .cartao-quadro {
+    transform: scale(0.99);
+}
+
+.coluna-quadro-corpo.coluna-recebeu {
+    animation: receber-coluna 0.6s var(--curva-suave);
+}
+
+.cartao-quadro.cartao-chegou {
+    animation: chegar-cartao 0.55s var(--curva-suave);
+}
+
+@keyframes pulsar-coluna {
+    0%, 100% { background: var(--cor-destaque-fraquissimo); }
+    50% { background: var(--cor-destaque-fraco); }
+}
+
+@keyframes receber-coluna {
+    0% { box-shadow: inset 0 0 0 1px var(--cor-destaque); }
+    45% { box-shadow: inset 0 0 0 2px var(--cor-destaque); background: var(--cor-destaque-fraco); }
+    100% { box-shadow: inset 0 0 0 0 transparent; background: transparent; }
+}
+
+@keyframes chegar-cartao {
+    0% { opacity: 0; transform: translateY(-10px) scale(0.96); }
+    60% { transform: translateY(0) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .grupo-data,
+    .cartao-quadro.cartao-chegou,
+    .coluna-quadro-corpo.coluna-alvo,
+    .coluna-quadro-corpo.coluna-recebeu {
+        animation: none;
+    }
+}
