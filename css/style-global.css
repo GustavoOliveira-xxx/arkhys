@@ -4369,25 +4369,17 @@ body.tela-acesso {
     perspective-origin: 50% 30%;
 }
 
-.navegacao .nav-conteudo {
-    transform-style: preserve-3d;
-}
-
 .nav-links {
-    transform: perspective(700px) rotateX(2.5deg);
-    transform-origin: 50% 100%;
-}
-
-.nav-item {
-    transform-style: preserve-3d;
+    perspective: 700px;
+    perspective-origin: 50% 120%;
 }
 
 .nav-item:hover .nav-icone {
-    transform: translateZ(14px) translateY(-2px) scale(1.16);
+    transform: translateY(-3px) scale(1.16);
 }
 
 .nav-item.ativo .nav-icone {
-    transform: translateZ(10px) scale(1.12);
+    transform: scale(1.12);
 }
 
 .botao {

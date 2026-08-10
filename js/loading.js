@@ -39,29 +39,50 @@ function garantirOverlay() {
     return overlay;
 }
 
+function travarRolagem(travar) {
+    if (document.body) document.body.style.overflow = travar ? 'hidden' : '';
+}
+
 export function mostrarCarregamento(mensagem = 'Iniciando Protocolo...') {
     contador++;
     const el = garantirOverlay();
     const texto = el.querySelector('.loading-global-texto');
     if (texto) texto.textContent = mensagem;
     el.classList.add('visivel');
-    document.body.style.overflow = 'hidden';
+    travarRolagem(true);
 }
 
 export function esconderCarregamento() {
     contador = Math.max(0, contador - 1);
-    if (contador === 0 && overlay) {
-        overlay.classList.remove('visivel');
-        setTimeout(() => {
-            if (!overlay.classList.contains('visivel')) {
-                document.body.style.overflow = '';
-            }
-        }, 500);
-    }
+    if (contador > 0 || !overlay) return;
+
+    overlay.classList.remove('visivel');
+    setTimeout(() => {
+        if (!overlay.classList.contains('visivel')) travarRolagem(false);
+    }, 500);
+}
+
+export function liberarCarregamento() {
+    contador = 0;
+    if (overlay) overlay.classList.remove('visivel');
+    travarRolagem(false);
 }
 
 mostrarCarregamento('Sincronizando Arkhys...');
-document.addEventListener('DOMContentLoaded', () => {
 
-    setTimeout(esconderCarregamento, 1200);
-});
+let aberturaEncerrada = false;
+
+function encerrarAberturaInicial(atraso = 700) {
+    if (aberturaEncerrada) return;
+    aberturaEncerrada = true;
+    setTimeout(esconderCarregamento, atraso);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => encerrarAberturaInicial(), { once: true });
+} else {
+    encerrarAberturaInicial();
+}
+
+window.addEventListener('load', () => encerrarAberturaInicial(0), { once: true });
+setTimeout(liberarCarregamento, 8000);
