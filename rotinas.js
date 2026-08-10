@@ -3,6 +3,7 @@ import { enviarERegistrarArquivo, removerArquivoPorCaminho, mapaAnexosPorRegistr
 import { urlsAssinadasEmLote, abrirVisualizadorArquivo, iconeSvgPorTipo } from './midia.js';
 import { concederXp } from './xp-service.js';
 import { celebrarConclusao } from './celebracao.js';
+import { sincronizarRevisoesDoRegistro } from './revisoes-service.js';
 
 const NOMES_DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const SIGLAS_DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -473,6 +474,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await concederXp('aula_registrada', `registro:${salvo.id}`, 10);
         }
 
+        const tituloAula = nomeRotinaRegistro.textContent;
+        const { criadas } = await sincronizarRevisoesDoRegistro(user.id, salvo, tituloAula);
+
         botao.disabled = false;
         botao.textContent = 'Salvar registro';
         fecharModalRegistro();
@@ -481,7 +485,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderizarTudo();
 
         if (eraNovo) {
-            celebrarConclusao({ titulo: nomeRotinaRegistro.textContent, texto: 'Aprendizado registrado' });
+            celebrarConclusao({ titulo: tituloAula, texto: 'Aprendizado registrado' });
+        }
+
+        if (criadas > 0) {
+            window.arkhysAvisar?.(`${criadas} ${criadas === 1 ? 'cartão de revisão criado' : 'cartões de revisão criados'}. Veja em Revisões.`);
         }
     });
 

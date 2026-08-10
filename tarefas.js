@@ -332,7 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         };
 
-        // Agrupa por data de entrega (estilo Microsoft Teams).
         const grupos = new Map();
         visiveis
             .slice()

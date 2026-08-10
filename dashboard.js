@@ -5,6 +5,7 @@ import { mapaAnexosPorTarefa } from './arquivos-service.js';
 import { celebrarConclusao } from './celebracao.js';
 import { validarConclusao } from './passos.js';
 import { concederXpDoDia, concederXpDiaPerfeito, concederXpConclusaoTarefa, buscarNiveis, calcularProgresso } from './xp-service.js';
+import { contarRevisoesDeHoje } from './revisoes-service.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -45,6 +46,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('qtdPendentes').textContent = pendentes;
     document.getElementById('qtdHoje').textContent = `${paraHoje} para hoje`;
     document.getElementById('qtdEntregas').textContent = proximas.length;
+
+    const totalRevisoes = await contarRevisoesDeHoje(user.id);
+    const campoRevisoes = document.getElementById('qtdRevisoes');
+    const detalheRevisoes = document.getElementById('detalheRevisoes');
+    if (campoRevisoes) campoRevisoes.textContent = totalRevisoes;
+    if (detalheRevisoes) {
+        detalheRevisoes.textContent = totalRevisoes
+            ? 'Toque para começar o ciclo'
+            : 'Ciclo de 1 · 3 · 7 · 14 · 30 dias';
+    }
 
     let { data: perfil } = await supabase
         .from('perfil')

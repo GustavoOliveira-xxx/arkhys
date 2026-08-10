@@ -3,6 +3,7 @@ import { urlPublicaMidia, ehImagem, iconeSvgPorTipo, rotuloPorTipo, extensaoDoAr
 import { celebrarConclusao } from './celebracao.js';
 import { listarAnexosDaTarefa, listarEntregasDaTarefa, listarTiposEntrega, enviarERegistrarArquivo, removerArquivoPorCaminho } from './arquivos-service.js';
 import { podeConcluir, motivoBloqueioConclusao } from './passos.js';
+import { abrirCompartilhamento } from './compartilhar.js';
 
 let overlayAtual = null;
 
@@ -130,7 +131,6 @@ function nomesDosMembros(tarefa, membros = []) {
         .filter(Boolean);
 }
 
-// "Fazer no nome de:" — nomes do grupo ou o nome do usuário da conta.
 function textoFazerNoNomeDe(tarefa, membros, nomeUsuario) {
     if (tarefa.modalidade === 'grupo') {
         const nomes = nomesDosMembros(tarefa, membros);
@@ -285,7 +285,9 @@ export async function abrirDetalhesTarefa(tarefa, opcoes = {}) {
 
     ligarBotoesPasso();
 
-    overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => compartilharTarefa(tarefa, materia));
+    overlay.querySelector('[data-acao="compartilhar"]').addEventListener('click', () => {
+        abrirCompartilhamento(tarefa, { materia, autor: textoFazerNoNomeDe(tarefa, membros, nomeUsuario) });
+    });
     overlay.querySelector('[data-acao="imprimir"]').addEventListener('click', () => imprimirTarefa(tarefa, materia, membros, ferramentas, nomeUsuario));
 
     await renderizarEntregas(overlay, tarefa);
@@ -391,30 +393,6 @@ async function renderizarEntregas(overlay, tarefa) {
     }
 
     await desenhar();
-}
-
-async function compartilharTarefa(tarefa, materia) {
-    const resumo = `📋 ${tarefa.titulo}\n` +
-        `${materia ? `Matéria: ${materia.nome}\n` : ''}` +
-        `Entrega: ${formatarData(tarefa.data_entrega)}\n` +
-        `${tarefa.descricao ? `\n${tarefa.descricao}\n` : ''}` +
-        `\nCompartilhado via Arkhys`;
-
-    if (navigator.share) {
-        try {
-            await navigator.share({ title: tarefa.titulo, text: resumo });
-        } catch (erro) {
-            if (erro.name !== 'AbortError') console.error('Erro ao compartilhar:', erro);
-        }
-        return;
-    }
-
-    try {
-        await navigator.clipboard.writeText(resumo);
-        alert('📋 Resumo da atividade copiado! Cole onde quiser compartilhar.');
-    } catch {
-        alert(resumo);
-    }
 }
 
 function nomeArquivoImpressao(tarefa, materia) {

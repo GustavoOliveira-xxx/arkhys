@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arkhys | Calendário</title>
+    <title>Arkhys | Revisões</title>
     <meta name="theme-color" content="#050407">
     <link rel="icon" type="image/svg+xml" href="assets/arkhys-simbolo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Fraunces:opsz,wght@9..144,380..680&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <meta name="theme-color" content="#050407">
     <link rel="stylesheet" href="css/style-global.css">
     <link rel="stylesheet" href="css/icones.css">
 
@@ -39,11 +38,11 @@
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg></span>
                     <span>Rotina</span>
                 </a>
-                <a href="revisoes.html" class="nav-item">
+                <a href="revisoes.html" class="nav-item ativo">
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-reabrir"></use></svg></span>
                     <span>Revisões</span>
                 </a>
-                <a href="calendario.html" class="nav-item ativo">
+                <a href="calendario.html" class="nav-item">
                     <span class="nav-icone"><svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-calendario"></use></svg></span>
                     <span>Calendário</span>
                 </a>
@@ -70,24 +69,62 @@
     <main class="conteudo-principal">
         <header class="cabecalho-pagina">
             <div class="cabecalho-texto">
-                <h1>Calendário</h1>
-                <p>Visualize seus compromissos por mês</p>
+                <h1>Revisões</h1>
+                <p>Seu diário de bordo vira um ciclo de estudo com repetição espaçada</p>
             </div>
-            <div class="navegacao-mes">
-                <button type="button" id="mesAnterior" class="botao botao-secundario">◀</button>
-                <span id="nomeMes" class="nome-mes"></span>
-                <button type="button" id="proximoMes" class="botao botao-secundario">▶</button>
-            </div>
+            <a href="rotinas.html" class="botao botao-secundario"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-nota"></use></svg> Abrir diário</a>
         </header>
 
-        <div class="grade-calendario">
-            <div class="cabecalho-dias">
-                <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+        <section class="painel-revisoes">
+            <div class="selo-revisao selo-revisao-atrasada">
+                <strong id="totalAtrasadas">0</strong>
+                <span>Atrasadas</span>
             </div>
-            <div id="diasCalendario" class="dias-calendario"></div>
+            <div class="selo-revisao selo-revisao-hoje">
+                <strong id="totalHoje">0</strong>
+                <span>Para hoje</span>
+            </div>
+            <div class="selo-revisao selo-revisao-proxima">
+                <strong id="totalProximas">0</strong>
+                <span>Agendadas</span>
+            </div>
+            <div class="selo-revisao selo-revisao-dominada">
+                <strong id="totalDominadas">0</strong>
+                <span>Dominadas</span>
+            </div>
+        </section>
+
+        <div class="legenda-intervalos">
+            <span>Ciclo de revisão:</span>
+            <b>1 dia</b><b>3 dias</b><b>7 dias</b><b>14 dias</b><b>30 dias</b>
+        </div>
+
+        <div class="abas-tarefas" id="abasRevisoes" role="tablist">
+            <button type="button" class="aba-tarefa ativa" data-fila="pendentes"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-reabrir"></use></svg> Para revisar</button>
+            <button type="button" class="aba-tarefa" data-fila="proximas"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-agenda"></use></svg> Agendadas</button>
+            <button type="button" class="aba-tarefa" data-fila="dominadas"><svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-concluido"></use></svg> Dominadas</button>
+        </div>
+
+        <div class="filtros-revisoes">
+            <select id="filtroTipoRevisao" class="campo-entrada campo-compacto">
+                <option value="">Aprendizados e dúvidas</option>
+                <option value="aprendizado">Só aprendizados</option>
+                <option value="duvida">Só dúvidas</option>
+            </select>
+            <select id="filtroAulaRevisao" class="campo-entrada campo-compacto">
+                <option value="">Todas as aulas</option>
+            </select>
+            <span class="metadado" id="resumoFila"></span>
+        </div>
+
+        <section class="grid-revisoes" id="gradeRevisoes"></section>
+
+        <div class="item-vazio" id="vazioRevisoes" hidden>
+            Nada por aqui ainda. Registre um aprendizado ou uma dúvida no diário de bordo e o Arkhys monta o ciclo de revisão sozinho.
         </div>
     </main>
+
     <script src="js/ui.js"></script>
-    <script type="module" src="js/calendario.js"></script>
+    <script type="module" src="js/revisoes.js"></script>
 </body>
 </html>
