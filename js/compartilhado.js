@@ -52,6 +52,15 @@ function situacaoDoPrazo(iso) {
     return { classe: 'proximo', texto: 'Em andamento' };
 }
 
+function enderecoSeguro(url = '') {
+    try {
+        const alvo = new URL(url, window.location.href);
+        return (alvo.protocol === 'https:' || alvo.protocol === 'http:') ? alvo.href : '';
+    } catch {
+        return '';
+    }
+}
+
 function iconeArquivo(nome = '') {
     const extensao = nome.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extensao)) return 'icon-imagem';
@@ -108,12 +117,16 @@ function renderizar(dados) {
             </div>
         </div>` : '';
 
-    const anexos = dados.a?.length ? `
+    const arquivosValidos = (dados.a || [])
+        .map(arquivo => ({ n: arquivo.n, u: enderecoSeguro(arquivo.u) }))
+        .filter(arquivo => arquivo.u);
+
+    const anexos = arquivosValidos.length ? `
         <div class="publico-secao">
             <h2>Arquivos</h2>
             <div class="publico-checklist">
-                ${dados.a.map(arquivo => `
-                    <a class="publico-passo" href="${escapar(arquivo.u)}" target="_blank" rel="noopener">
+                ${arquivosValidos.map(arquivo => `
+                    <a class="publico-passo" href="${escapar(arquivo.u)}" target="_blank" rel="noopener noreferrer">
                         <span class="publico-passo-marca"><svg class="icon-svg icon-svg-sm"><use href="assets/icones/arkhys-icons.svg#${iconeArquivo(arquivo.n)}"></use></svg></span>
                         <span>${escapar(arquivo.n)}</span>
                     </a>

@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).join('');
 
             return `
-                <section class="coluna-quadro" data-coluna="${coluna.id}">
+                <section class="coluna-quadro" data-coluna="${coluna.id}" style="--indice-coluna: ${indice}">
                     <header class="coluna-quadro-topo">
                         <h3>${coluna.nome}</h3>
                         <span class="coluna-quadro-contador">${itens.length}</span>

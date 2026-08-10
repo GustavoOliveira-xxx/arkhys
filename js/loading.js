@@ -12,7 +12,7 @@ function garantirOverlay() {
             <div class="loading-logo-wrapper">
                 <div class="loading-ring"></div>
                 <div class="loading-ring-inner"></div>
-                <img src="assets/arkhys-simbolo.svg" alt="Arkhys" class="loading-global-logo">
+                <img src="assets/arkhys-totem.png" alt="Arkhys" class="loading-global-logo">
                 <div class="loading-particles">
                     <span style="--i:1"></span>
                     <span style="--i:2"></span>

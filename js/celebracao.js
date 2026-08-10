@@ -14,7 +14,7 @@ export function celebrarConclusao({ titulo = '', texto = 'Tarefa concluída', du
                 <div class="celebracao-brasao">
                     <span class="celebracao-anel"></span>
                     <span class="celebracao-anel celebracao-anel-2"></span>
-                    <img src="assets/arkhys-simbolo.svg" alt="Arkhys" class="celebracao-logo">
+                    <img src="assets/arkhys-brasao.png" alt="Arkhys" class="celebracao-logo">
                     <span class="celebracao-selo">
                         <svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-concluido"></use></svg>
                     </span>
