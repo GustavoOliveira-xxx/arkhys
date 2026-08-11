@@ -2,7 +2,6 @@
     'use strict';
 
     var LOGO = 'assets/logo-arkhys.png';
-    var TOTEM = 'assets/arkhys-totem.png';
 
     var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var pontoFino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -35,28 +34,9 @@
         });
     }
 
-    function totemHtml() {
-        return '' +
-            '<div class="totem-palco">' +
-                '<span class="totem-halo" aria-hidden="true"></span>' +
-                '<span class="totem-anel totem-anel-1" aria-hidden="true"></span>' +
-                '<span class="totem-anel totem-anel-2" aria-hidden="true"></span>' +
-                '<span class="totem-anel totem-anel-3" aria-hidden="true"></span>' +
-                '<img class="totem-aura" src="' + TOTEM + '" alt="" aria-hidden="true">' +
-                '<img class="totem-corpo" src="' + TOTEM + '" alt="Elmo do Arkhys">' +
-                '<span class="totem-lustro" aria-hidden="true"></span>' +
-                '<span class="totem-faisca" aria-hidden="true"></span>' +
-                '<span class="totem-base" aria-hidden="true"></span>' +
-                '<img class="totem-reflexo" src="' + TOTEM + '" alt="" aria-hidden="true">' +
-            '</div>';
-    }
-
+    /* o totem do Agamenon mora em js/agamenon.js (vetor em camadas + paralaxe 3D) */
     function montarTotens() {
-        document.querySelectorAll('[data-totem]').forEach(function (alvo) {
-            if (alvo.querySelector('.totem-palco')) return;
-            alvo.classList.add('totem');
-            alvo.innerHTML = totemHtml();
-        });
+        if (window.ArkhysAgamenon) window.ArkhysAgamenon.montar();
     }
 
     function ligarInclinacao(seletor, forcaY, forcaX) {
@@ -377,7 +357,6 @@
                 agendado = false;
                 ligarProfundidade();
                 montarTotens();
-                ligarInclinacao('.totem', 26, 16);
             });
         }).observe(document.body, { childList: true, subtree: true });
     }
@@ -408,7 +387,6 @@
         montarMarcas();
         montarTotens();
         ligarInclinacao('.marca', 18, 12);
-        ligarInclinacao('.totem', 26, 16);
         ligarParalaxe();
         ligarIndicadorNav();
         ligarRolagem();
