@@ -4607,6 +4607,18 @@ html.modo-leve .cofre-disco {
     min-width: 200px;
 }
 
+.cabecalho-heroi {
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--espaco-md);
+}
+
+.totem-painel {
+    --tamanho-totem: 190px;
+    flex: 0 0 auto;
+    margin: -0.5rem 0 -1.2rem;
+}
+
 .pilha-3d {
     --lado-pilha: 118px;
     position: relative;
@@ -5279,6 +5291,38 @@ html.modo-leve .cofre-disco {
         --tamanho-totem: 210px;
     }
 
+    .totem-painel {
+        --tamanho-totem: 104px;
+        margin: 0.7rem -0.4rem -0.6rem 0;
+        align-self: flex-start;
+    }
+
+    .cabecalho-heroi {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        gap: var(--espaco-xs);
+        margin-bottom: var(--espaco-sm);
+    }
+
+    .cabecalho-heroi .cabecalho-texto {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .cabecalho-heroi .cabecalho-saudacao {
+        gap: var(--espaco-xs);
+    }
+
+    .cabecalho-heroi .avatar-pequeno {
+        width: 46px;
+        height: 46px;
+        font-size: 1.05rem;
+    }
+
+    .cabecalho-heroi h1 {
+        font-size: clamp(1.3rem, 1.05rem + 2.2vw, 1.8rem);
+    }
+
     .pilha-3d {
         --lado-pilha: 96px;
     }
@@ -5326,6 +5370,14 @@ html.modo-app .logo-mobile-flutuante {
 
     .totem {
         --tamanho-totem: 176px;
+    }
+
+    .totem-painel {
+        --tamanho-totem: 88px;
+    }
+
+    .cabecalho-heroi .cabecalho-texto p {
+        font-size: 0.82rem;
     }
 }
 
