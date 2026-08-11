@@ -2,28 +2,45 @@
     'use strict';
 
     var LOGO = 'assets/logo-arkhys.png';
+    var TOTEM = 'assets/arkhys-totem.png';
 
     var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var pontoFino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    var telaPequena = window.matchMedia('(max-width: 768px)').matches;
+    var poucaMemoria = (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
 
-    /* Marca o documento como 'leve' em aparelhos modestos: o CSS usa isso para
-       cortar desfoques e camadas caras sem mudar o desenho da interface. */
-    function medirDesempenho() {
-        var raiz = document.documentElement;
-        if (raiz.dataset.desempenho) return;
+    var tarefasQuadro = [];
+    var lacoAtivo = false;
 
-        var nucleos = navigator.hardwareConcurrency || 8;
-        var memoria = navigator.deviceMemory || 8;
-        var menorLado = Math.min(window.innerWidth || 1024, window.innerHeight || 768);
-
-        /* o custo alto e nas telas de toque; desktop modesto aguenta o visual cheio */
-        var leve = semMovimento || memoria <= 2 ||
-            (!pontoFino && (menorLado < 760 || nucleos <= 4));
-        raiz.dataset.desempenho = leve ? 'leve' : 'pleno';
+    function inscrever(tarefa) {
+        tarefasQuadro.push(tarefa);
+        if (!lacoAtivo) {
+            lacoAtivo = true;
+            requestAnimationFrame(rodar);
+        }
     }
 
-    medirDesempenho();
-    var modoLeve = document.documentElement.dataset.desempenho === 'leve';
+    function rodar(agora) {
+        if (document.hidden) {
+            lacoAtivo = false;
+            return;
+        }
+
+        for (var i = 0; i < tarefasQuadro.length; i++) tarefasQuadro[i](agora);
+        requestAnimationFrame(rodar);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && !lacoAtivo && tarefasQuadro.length) {
+            lacoAtivo = true;
+            requestAnimationFrame(rodar);
+        }
+    });
+
+    function suavizar(estado) {
+        estado.x += (estado.alvoX - estado.x) * estado.forca;
+        estado.y += (estado.alvoY - estado.y) * estado.forca;
+        return Math.abs(estado.alvoX - estado.x) > 0.0005 || Math.abs(estado.alvoY - estado.y) > 0.0005;
+    }
 
     function marcaHtml(variacao) {
         return '' +
@@ -53,169 +70,158 @@
         });
     }
 
-    /* o totem do Agamenon mora em js/agamenon.js (vetor em camadas + paralaxe 3D) */
     function montarTotens() {
-        if (window.ArkhysAgamenon) window.ArkhysAgamenon.montar();
-    }
-
-    /* --------------------------------------------------------------- selo 3D
-       Égide de progresso da aba de tarefas: placas empilhadas em profundidade,
-       aro de conclusão e chevron da marca. Só gradientes e transforms — nada
-       de imagem ou filtro caro, para rodar liso em qualquer aparelho. */
-    var CHEVRON = '<svg class="selo3d-chevron" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
-        '<path d="M24 7 41 41h-9.5L24 25.6 16.5 41H7z"/></svg>';
-
-    function seloHtml() {
-        return '' +
-            '<div class="selo3d-palco">' +
-                '<span class="selo3d-aura"></span>' +
-                '<span class="selo3d-anel selo3d-anel-2"></span>' +
-                '<span class="selo3d-anel selo3d-anel-1"></span>' +
-                '<span class="selo3d-placa selo3d-placa-tras"></span>' +
-                '<span class="selo3d-placa selo3d-placa-meio"></span>' +
-                '<span class="selo3d-arco"></span>' +
-                '<span class="selo3d-nucleo">' + CHEVRON + '</span>' +
-                '<span class="selo3d-lustro"></span>' +
-            '</div>' +
-            '<p class="selo3d-dados">' +
-                '<strong class="selo3d-valor">0%</strong>' +
-                '<span class="selo3d-rotulo">0 de 0 concluídas</span>' +
-            '</p>';
-    }
-
-    var selos = [];
-
-    function montarSelos() {
-        document.querySelectorAll('[data-selo3d]').forEach(function (alvo) {
-            if (alvo.dataset.montado) return;
-            alvo.dataset.montado = '1';
-            alvo.classList.add('selo3d');
-            alvo.innerHTML = seloHtml();
-            selos.push(alvo);
-
-            requestAnimationFrame(function () { alvo.classList.add('montado'); });
-            ligarRelevo(alvo, alvo.firstElementChild, 16, 10, 13);
+        document.querySelectorAll('[data-totem]').forEach(function (alvo) {
+            if (alvo.querySelector('.totem-palco')) return;
+            alvo.classList.add('totem');
+            alvo.innerHTML = '' +
+                '<div class="totem-palco">' +
+                    '<span class="totem-halo" aria-hidden="true"></span>' +
+                    '<span class="totem-anel totem-anel-1" aria-hidden="true"></span>' +
+                    '<span class="totem-anel totem-anel-2" aria-hidden="true"></span>' +
+                    '<span class="totem-anel totem-anel-3" aria-hidden="true"></span>' +
+                    '<img class="totem-aura" src="' + TOTEM + '" alt="" aria-hidden="true">' +
+                    '<img class="totem-corpo" src="' + TOTEM + '" alt="Elmo do Arkhys">' +
+                    '<span class="totem-lustro" aria-hidden="true"></span>' +
+                    '<span class="totem-faisca" aria-hidden="true"></span>' +
+                    '<span class="totem-base" aria-hidden="true"></span>' +
+                    '<img class="totem-reflexo" src="' + TOTEM + '" alt="" aria-hidden="true">' +
+                '</div>';
         });
     }
 
-    function definirProgressoSelo(feitas, total) {
-        var razao = total > 0 ? feitas / total : 0;
-        var texto = total > 0
-            ? feitas + ' de ' + total + ' concluídas'
-            : 'Nenhuma tarefa ainda';
-
-        selos.forEach(function (selo) {
-            var antes = parseFloat(selo.style.getPropertyValue('--progresso')) || 0;
-            selo.style.setProperty('--progresso', razao.toFixed(4));
-
-            var valor = selo.querySelector('.selo3d-valor');
-            var rotulo = selo.querySelector('.selo3d-rotulo');
-            if (valor) valor.textContent = Math.round(razao * 100) + '%';
-            if (rotulo) rotulo.textContent = texto;
-
-            if (razao > antes + 0.0001 && !semMovimento) {
-                selo.classList.remove('avancou');
-                void selo.offsetWidth;
-                selo.classList.add('avancou');
-            }
+    function montarPilhas() {
+        document.querySelectorAll('[data-pilha]').forEach(function (alvo) {
+            if (alvo.querySelector('.pilha-palco')) return;
+            alvo.classList.add('pilha-3d');
+            alvo.setAttribute('aria-hidden', 'true');
+            alvo.innerHTML = '' +
+                '<div class="pilha-palco">' +
+                    '<span class="pilha-brilho"></span>' +
+                    '<span class="pilha-ficha pilha-ficha-3"></span>' +
+                    '<span class="pilha-ficha pilha-ficha-2"></span>' +
+                    '<span class="pilha-ficha pilha-ficha-1">' +
+                        '<span class="pilha-linha"></span>' +
+                        '<span class="pilha-linha"></span>' +
+                        '<span class="pilha-linha"></span>' +
+                    '</span>' +
+                    '<span class="pilha-selo">' +
+                        '<svg class="icon-svg"><use href="assets/icones/arkhys-icons.svg#icon-concluido"></use></svg>' +
+                    '</span>' +
+                    '<span class="pilha-sombra"></span>' +
+                '</div>';
         });
     }
 
-    window.arkhysSelo = { definir: definirProgressoSelo };
+    function montarCofres() {
+        document.querySelectorAll('[data-cofre]').forEach(function (alvo) {
+            if (alvo.querySelector('.cofre-palco')) return;
+            alvo.classList.add('cofre-3d');
+            alvo.setAttribute('aria-hidden', 'true');
+            alvo.innerHTML = '' +
+                '<div class="cofre-palco">' +
+                    '<div class="cofre-cubo">' +
+                        '<span class="cofre-face cofre-frente">' +
+                            '<span class="cofre-disco">' +
+                                '<span class="cofre-raio"></span>' +
+                                '<span class="cofre-raio"></span>' +
+                                '<span class="cofre-raio"></span>' +
+                                '<span class="cofre-miolo"></span>' +
+                            '</span>' +
+                            '<span class="cofre-rebite cofre-rebite-1"></span>' +
+                            '<span class="cofre-rebite cofre-rebite-2"></span>' +
+                            '<span class="cofre-rebite cofre-rebite-3"></span>' +
+                            '<span class="cofre-rebite cofre-rebite-4"></span>' +
+                        '</span>' +
+                        '<span class="cofre-face cofre-tras"></span>' +
+                        '<span class="cofre-face cofre-esquerda"></span>' +
+                        '<span class="cofre-face cofre-direita"></span>' +
+                        '<span class="cofre-face cofre-topo"></span>' +
+                        '<span class="cofre-face cofre-base"></span>' +
+                    '</div>' +
+                    '<span class="cofre-halo"></span>' +
+                    '<span class="cofre-sombra"></span>' +
+                '</div>';
+        });
+    }
 
-    /* Inclinação 3D com mola, compartilhada pelos elementos em relevo.
-       Só reage a ponteiro fino; no toque fica estático (sem rAF ocioso). */
-    function ligarRelevo(alvo, palco, forcaY, forcaX, deslocamento) {
-        if (!palco || semMovimento || !pontoFino) return;
-        if (alvo.dataset.relevo) return;
-        alvo.dataset.relevo = '1';
+    function ligarPeca(alvo, forcaY, forcaX, giroOcioso) {
+        if (semMovimento || alvo.dataset.peca === 'ligada') return;
+        alvo.dataset.peca = 'ligada';
 
-        var mira = { rx: 0, ry: 0, dx: 0, dy: 0 };
-        var atual = { rx: 0, ry: 0, dx: 0, dy: 0 };
-        var chaves = ['rx', 'ry', 'dx', 'dy'];
-        var quadro = null;
-        var area = null;
+        var palco = alvo.firstElementChild;
+        if (!palco) return;
 
-        function medir() { area = alvo.getBoundingClientRect(); }
+        var estado = { x: 0, y: 0, alvoX: 0, alvoY: 0, forca: 0.12 };
+        var tocando = false;
+        var ocioso = 0;
+        var precisaPintar = true;
 
-        function passo() {
-            var resto = 0;
-            for (var i = 0; i < chaves.length; i++) {
-                var k = chaves[i];
-                var delta = mira[k] - atual[k];
-                atual[k] += delta * 0.12;
-                resto += Math.abs(delta);
+        var ultimoOcioso = 0;
+
+        function pintar(agora) {
+            var movendo = suavizar(estado);
+            var animaOcioso = !tocando && giroOcioso && !modoLeve;
+
+            if (animaOcioso) {
+                if (agora - ultimoOcioso < 40) {
+                    if (!movendo && !precisaPintar) return;
+                } else {
+                    ultimoOcioso = agora;
+                    ocioso = Math.sin(agora / 2600) * giroOcioso;
+                }
+            } else if (!movendo && !precisaPintar) {
+                return;
             }
 
-            alvo.style.setProperty('--rx', atual.rx.toFixed(2) + 'deg');
-            alvo.style.setProperty('--ry', atual.ry.toFixed(2) + 'deg');
-            alvo.style.setProperty('--desloc-x', atual.dx.toFixed(2) + 'px');
-            alvo.style.setProperty('--desloc-y', atual.dy.toFixed(2) + 'px');
-
-            quadro = resto > 0.02 ? requestAnimationFrame(passo) : null;
+            alvo.style.setProperty('--ry', (estado.x * forcaY + ocioso).toFixed(2) + 'deg');
+            alvo.style.setProperty('--rx', (-estado.y * forcaX).toFixed(2) + 'deg');
+            precisaPintar = movendo;
         }
 
-        function acordar() {
-            if (!quadro && !document.hidden) quadro = requestAnimationFrame(passo);
+        inscrever(pintar);
+
+        function mover(evento) {
+            var area = alvo.getBoundingClientRect();
+            estado.alvoX = (evento.clientX - area.left) / area.width - 0.5;
+            estado.alvoY = (evento.clientY - area.top) / area.height - 0.5;
+            precisaPintar = true;
+            alvo.classList.add('em-foco');
         }
+
+        function soltar() {
+            tocando = false;
+            estado.alvoX = 0;
+            estado.alvoY = 0;
+            precisaPintar = true;
+            alvo.classList.remove('em-foco');
+        }
+
+        alvo.addEventListener('pointerdown', function (evento) {
+            tocando = true;
+            if (alvo.setPointerCapture) {
+                try { alvo.setPointerCapture(evento.pointerId); } catch (e) { tocando = true; }
+            }
+            mover(evento);
+        });
 
         alvo.addEventListener('pointermove', function (evento) {
-            if (evento.pointerType === 'touch') return;
-            if (!area || !area.width) medir();
-            if (!area.width) return;
-
-            var nx = (evento.clientX - area.left) / area.width - 0.5;
-            var ny = (evento.clientY - area.top) / area.height - 0.5;
-
-            mira.ry = nx * forcaY;
-            mira.rx = -ny * forcaX;
-            mira.dx = nx * deslocamento;
-            mira.dy = ny * deslocamento * 0.6;
-
-            alvo.style.setProperty('--luz-x', ((nx + 0.5) * 100).toFixed(1) + '%');
-            alvo.style.setProperty('--luz-y', ((ny + 0.5) * 100).toFixed(1) + '%');
-            alvo.classList.add('em-foco');
-            acordar();
-        }, { passive: true });
-
-        alvo.addEventListener('pointerleave', function () {
-            mira.rx = 0; mira.ry = 0; mira.dx = 0; mira.dy = 0;
-            alvo.classList.remove('em-foco');
-            acordar();
+            if (evento.pointerType === 'touch' && !tocando) return;
+            mover(evento);
         });
 
-        window.addEventListener('resize', medir, { passive: true });
-        window.addEventListener('scroll', medir, { passive: true });
-        medir();
+        alvo.addEventListener('pointerup', soltar);
+        alvo.addEventListener('pointercancel', soltar);
+        alvo.addEventListener('pointerleave', function (evento) {
+            if (evento.pointerType !== 'touch') soltar();
+        });
     }
 
-    function ligarInclinacao(seletor, forcaY, forcaX) {
-        if (!pontoFino || semMovimento) return;
-
-        document.querySelectorAll(seletor).forEach(function (alvo) {
-            if (alvo.dataset.inclinacao === 'ligada') return;
-            alvo.dataset.inclinacao = 'ligada';
-
-            var palco = alvo.firstElementChild;
-            if (!palco) return;
-
-            alvo.addEventListener('pointermove', function (evento) {
-                var area = alvo.getBoundingClientRect();
-                var x = (evento.clientX - area.left) / area.width - 0.5;
-                var y = (evento.clientY - area.top) / area.height - 0.5;
-                alvo.style.setProperty('--ry', (x * forcaY).toFixed(2) + 'deg');
-                alvo.style.setProperty('--rx', (-y * forcaX).toFixed(2) + 'deg');
-                alvo.style.setProperty('--luz-x', ((x + 0.5) * 100).toFixed(1) + '%');
-                alvo.style.setProperty('--luz-y', ((y + 0.5) * 100).toFixed(1) + '%');
-                alvo.classList.add('em-foco');
-            });
-
-            alvo.addEventListener('pointerleave', function () {
-                alvo.style.setProperty('--ry', '0deg');
-                alvo.style.setProperty('--rx', '0deg');
-                alvo.classList.remove('em-foco');
-            });
-        });
+    function ligarPecas() {
+        document.querySelectorAll('.marca').forEach(function (el) { ligarPeca(el, 20, 13, 0); });
+        document.querySelectorAll('.totem').forEach(function (el) { ligarPeca(el, 28, 17, 5); });
+        document.querySelectorAll('.pilha-3d').forEach(function (el) { ligarPeca(el, 26, 18, 7); });
+        document.querySelectorAll('.cofre-3d').forEach(function (el) { ligarPeca(el, 34, 20, 12); });
     }
 
     function montarFundo() {
@@ -242,25 +248,31 @@
     }
 
     function ligarBrasas(fundo) {
-        if (semMovimento || modoLeve) return;
-        if (fundo.querySelector('.bg-brasas')) return;
+        if (semMovimento || fundo.querySelector('.bg-brasas')) return;
 
         var tela = document.createElement('canvas');
         tela.className = 'bg-brasas';
         tela.setAttribute('aria-hidden', 'true');
         fundo.appendChild(tela);
 
-        var ctx = tela.getContext('2d');
-        var densidade = window.innerWidth < 760 ? 26 : 54;
+        var ctx = tela.getContext('2d', { alpha: true, desynchronized: true });
         var brasas = [];
         var largura = 0;
         var altura = 0;
-        var ponteiro = { x: -999, y: -999 };
-        var ativo = true;
-        var quadro = null;
+        var escala = 1;
+        var ponteiro = { x: -999, y: -999, ativo: false };
+        var ultimoQuadro = 0;
+        var intervalo = poucaMemoria || telaPequena ? 33 : 16;
+
+        function densidade() {
+            var area = window.innerWidth * window.innerHeight;
+            var base = Math.round(area / 26000);
+            var teto = poucaMemoria ? 22 : (telaPequena ? 26 : 54);
+            return Math.max(12, Math.min(teto, base));
+        }
 
         function medir() {
-            var escala = Math.min(window.devicePixelRatio || 1, 2);
+            escala = Math.min((window.devicePixelRatio || 1) * 0.75, telaPequena ? 1 : 1.4);
             largura = window.innerWidth;
             altura = window.innerHeight;
             tela.width = Math.floor(largura * escala);
@@ -274,8 +286,8 @@
             return {
                 x: Math.random() * largura,
                 y: inicial ? Math.random() * altura : altura + Math.random() * 60,
-                r: 0.6 + Math.random() * 1.9,
-                vy: 0.16 + Math.random() * 0.5,
+                r: 0.7 + Math.random() * 1.9,
+                vy: 0.18 + Math.random() * 0.5,
                 vx: (Math.random() - 0.5) * 0.22,
                 fase: Math.random() * Math.PI * 2,
                 giro: 0.006 + Math.random() * 0.014,
@@ -283,8 +295,10 @@
             };
         }
 
-        function desenhar() {
-            if (!ativo) { quadro = null; return; }
+        function pintar(agora) {
+            if (modoLeve) return;
+            if (agora - ultimoQuadro < intervalo) return;
+            ultimoQuadro = agora;
 
             ctx.clearRect(0, 0, largura, altura);
 
@@ -292,83 +306,86 @@
                 var b = brasas[i];
                 b.fase += b.giro;
                 b.y -= b.vy;
-                b.x += b.vx + Math.sin(b.fase) * 0.32;
+                b.x += b.vx + Math.sin(b.fase) * 0.3;
 
-                var dx = b.x - ponteiro.x;
-                var dy = b.y - ponteiro.y;
-                var dist2 = dx * dx + dy * dy;
-                if (dist2 < 24000) {
-                    var forca = (1 - dist2 / 24000) * 1.5;
-                    b.x += (dx / (Math.sqrt(dist2) || 1)) * forca;
-                    b.y += (dy / (Math.sqrt(dist2) || 1)) * forca;
+                if (ponteiro.ativo) {
+                    var dx = b.x - ponteiro.x;
+                    var dy = b.y - ponteiro.y;
+                    var dist2 = dx * dx + dy * dy;
+                    if (dist2 < 22000 && dist2 > 1) {
+                        var dist = Math.sqrt(dist2);
+                        var forca = (1 - dist2 / 22000) * 1.6;
+                        b.x += (dx / dist) * forca;
+                        b.y += (dy / dist) * forca;
+                    }
                 }
 
                 if (b.y < -20 || b.x < -40 || b.x > largura + 40) brasas[i] = nova(false);
 
-                var alfa = (0.22 + Math.abs(Math.sin(b.fase)) * 0.45) * Math.min(1, b.y / altura + 0.25);
+                var alfa = (0.2 + Math.abs(Math.sin(b.fase)) * 0.42) * Math.min(1, b.y / altura + 0.3);
                 ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.arc(b.x, b.y, b.r, 0, 6.283185);
                 ctx.fillStyle = b.ouro
-                    ? 'rgba(232, 180, 74, ' + alfa.toFixed(3) + ')'
-                    : 'rgba(219, 42, 56, ' + alfa.toFixed(3) + ')';
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = b.ouro ? 'rgba(232, 180, 74, 0.6)' : 'rgba(193, 18, 31, 0.65)';
+                    ? 'rgba(240, 196, 99, ' + alfa.toFixed(3) + ')'
+                    : 'rgba(226, 52, 66, ' + alfa.toFixed(3) + ')';
                 ctx.fill();
             }
-
-            ctx.shadowBlur = 0;
-            quadro = requestAnimationFrame(desenhar);
         }
 
-        function iniciar() {
+        function reiniciar() {
             medir();
+            var alvo = densidade();
             brasas = [];
-            for (var i = 0; i < densidade; i++) brasas.push(nova(true));
-            if (!quadro) quadro = requestAnimationFrame(desenhar);
+            for (var i = 0; i < alvo; i++) brasas.push(nova(true));
         }
 
-        window.addEventListener('resize', medir, { passive: true });
+        var redimensionar = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(redimensionar);
+            redimensionar = setTimeout(reiniciar, 220);
+        }, { passive: true });
+
         window.addEventListener('pointermove', function (e) {
             ponteiro.x = e.clientX;
             ponteiro.y = e.clientY;
+            ponteiro.ativo = true;
         }, { passive: true });
-        window.addEventListener('pointerleave', function () {
-            ponteiro.x = -999;
-            ponteiro.y = -999;
-        });
 
-        document.addEventListener('visibilitychange', function () {
-            ativo = !document.hidden;
-            if (ativo && !quadro) quadro = requestAnimationFrame(desenhar);
-        });
+        window.addEventListener('pointerup', function () { ponteiro.ativo = false; }, { passive: true });
+        window.addEventListener('pointerleave', function () { ponteiro.ativo = false; }, { passive: true });
 
-        iniciar();
+        reiniciar();
+        inscrever(pintar);
     }
 
-    function ligarParalaxe() {
-        if (!pontoFino || semMovimento) return;
+    function ligarParalaxeFundo() {
+        if (semMovimento) return;
 
-        var alvoX = 0.5, alvoY = 0.5, atualX = 0.5, atualY = 0.5, rodando = false;
+        var estado = { x: 0.5, y: 0.5, alvoX: 0.5, alvoY: 0.5, forca: 0.06 };
+        var raiz = document.documentElement;
+        var precisa = false;
 
-        function passo() {
-            atualX += (alvoX - atualX) * 0.055;
-            atualY += (alvoY - atualY) * 0.055;
-            var raiz = document.documentElement;
-            raiz.style.setProperty('--mx', atualX.toFixed(4));
-            raiz.style.setProperty('--my', atualY.toFixed(4));
-
-            if (Math.abs(alvoX - atualX) > 0.0008 || Math.abs(alvoY - atualY) > 0.0008) {
-                requestAnimationFrame(passo);
-            } else {
-                rodando = false;
-            }
-        }
+        inscrever(function () {
+            if (!precisa) return;
+            precisa = suavizar(estado);
+            raiz.style.setProperty('--mx', estado.x.toFixed(4));
+            raiz.style.setProperty('--my', estado.y.toFixed(4));
+        });
 
         window.addEventListener('pointermove', function (evento) {
-            alvoX = evento.clientX / window.innerWidth;
-            alvoY = evento.clientY / window.innerHeight;
-            if (!rodando) { rodando = true; requestAnimationFrame(passo); }
+            estado.alvoX = evento.clientX / window.innerWidth;
+            estado.alvoY = evento.clientY / window.innerHeight;
+            precisa = true;
         }, { passive: true });
+
+        if (telaPequena) {
+            window.addEventListener('scroll', function () {
+                var total = document.documentElement.scrollHeight - window.innerHeight;
+                estado.alvoY = total > 0 ? Math.min(1, window.scrollY / total) : 0.5;
+                estado.alvoX = 0.5 + Math.sin(window.scrollY / 900) * 0.3;
+                precisa = true;
+            }, { passive: true });
+        }
     }
 
     function ligarIndicadorNav() {
@@ -389,22 +406,21 @@
 
         posicionar(ativo());
         trilho.querySelectorAll('.nav-item').forEach(function (item) {
-            item.addEventListener('pointerenter', function () { posicionar(item); });
+            item.addEventListener('pointerenter', function (evento) {
+                if (evento.pointerType !== 'touch') posicionar(item);
+            });
         });
         trilho.addEventListener('pointerleave', function () { posicionar(ativo()); });
-        window.addEventListener('resize', function () { posicionar(ativo()); });
+        window.addEventListener('resize', function () { posicionar(ativo()); }, { passive: true });
         window.addEventListener('load', function () { posicionar(ativo()); });
     }
 
     function ligarRolagem() {
-        var barra = document.querySelector('.barra-progresso-rolagem');
-        if (!barra) {
-            barra = document.createElement('div');
-            barra.className = 'barra-progresso-rolagem';
-            barra.setAttribute('aria-hidden', 'true');
-            barra.innerHTML = '<span></span>';
-            document.body.appendChild(barra);
-        }
+        var barra = document.createElement('div');
+        barra.className = 'barra-progresso-rolagem';
+        barra.setAttribute('aria-hidden', 'true');
+        barra.innerHTML = '<span></span>';
+        document.body.appendChild(barra);
 
         var preenchimento = barra.firstElementChild;
         var ultimo = -1;
@@ -432,33 +448,67 @@
     }
 
     function ligarProfundidade() {
-        if (!pontoFino || semMovimento || modoLeve) return;
+        if (semMovimento) return;
 
-        document.querySelectorAll('.card-resumo, .cartao-revisao, .cartao-quadro, .forma-xp, .item-diario').forEach(function (cartao) {
+        var seletor = '.card-resumo, .cartao-revisao, .cartao-quadro, .forma-xp, .item-diario, .selo-revisao';
+
+        document.querySelectorAll(seletor).forEach(function (cartao) {
             if (cartao.dataset.profundidade === 'ligada') return;
             cartao.dataset.profundidade = 'ligada';
 
-            cartao.addEventListener('pointermove', function (evento) {
-                var area = cartao.getBoundingClientRect();
-                var x = (evento.clientX - area.left) / area.width;
-                var y = (evento.clientY - area.top) / area.height;
-                cartao.style.setProperty('--ry', ((x - 0.5) * 8).toFixed(2) + 'deg');
-                cartao.style.setProperty('--rx', ((0.5 - y) * 7).toFixed(2) + 'deg');
-                cartao.style.setProperty('--px', (x * 100).toFixed(1) + '%');
-                cartao.style.setProperty('--py', (y * 100).toFixed(1) + '%');
-            });
+            var pendente = false;
 
-            cartao.addEventListener('pointerleave', function () {
+            function aplicar(evento) {
+                if (pendente) return;
+                pendente = true;
+                requestAnimationFrame(function () {
+                    pendente = false;
+                    var area = cartao.getBoundingClientRect();
+                    var x = (evento.clientX - area.left) / area.width;
+                    var y = (evento.clientY - area.top) / area.height;
+                    cartao.style.setProperty('--ry', ((x - 0.5) * 8).toFixed(2) + 'deg');
+                    cartao.style.setProperty('--rx', ((0.5 - y) * 7).toFixed(2) + 'deg');
+                    cartao.style.setProperty('--px', (x * 100).toFixed(1) + '%');
+                    cartao.style.setProperty('--py', (y * 100).toFixed(1) + '%');
+                });
+            }
+
+            function repousar() {
                 cartao.style.setProperty('--ry', '0deg');
                 cartao.style.setProperty('--rx', '0deg');
-            });
+            }
+
+            cartao.addEventListener('pointermove', function (evento) {
+                if (evento.pointerType === 'touch') return;
+                aplicar(evento);
+            }, { passive: true });
+
+            cartao.addEventListener('pointerdown', function (evento) {
+                if (evento.pointerType !== 'touch') return;
+                aplicar(evento);
+                cartao.classList.add('tocado');
+            }, { passive: true });
+
+            cartao.addEventListener('pointerup', function () {
+                repousar();
+                cartao.classList.remove('tocado');
+            }, { passive: true });
+
+            cartao.addEventListener('pointercancel', function () {
+                repousar();
+                cartao.classList.remove('tocado');
+            }, { passive: true });
+
+            cartao.addEventListener('pointerleave', repousar, { passive: true });
         });
     }
 
     function ligarOndas() {
+        if (semMovimento) return;
+
         document.addEventListener('pointerdown', function (evento) {
-            var alvo = evento.target.closest('.botao, .btn-acao, .btn-saiba-mais, .aba-tarefa, .nav-item, .chip-dia, .canal-botao');
-            if (!alvo || semMovimento) return;
+            var alvo = evento.target.closest && evento.target.closest('.botao, .btn-acao, .btn-saiba-mais, .aba-tarefa, .nav-item, .chip-dia, .canal-botao, .aba-item');
+            if (!alvo) return;
 
             var area = alvo.getBoundingClientRect();
             var onda = document.createElement('span');
@@ -469,7 +519,7 @@
             if (getComputedStyle(alvo).position === 'static') alvo.style.position = 'relative';
             alvo.appendChild(onda);
             setTimeout(function () { onda.remove(); }, 620);
-        });
+        }, { passive: true });
     }
 
     function ligarRevelacao() {
@@ -487,11 +537,11 @@
                 entrada.target.classList.add('visivel');
                 observador.unobserve(entrada.target);
             });
-        }, { rootMargin: '0px 0px -6% 0px', threshold: 0.05 });
+        }, { rootMargin: '0px 0px -4% 0px', threshold: 0.03 });
 
         alvos.forEach(function (alvo, indice) {
             alvo.classList.add('revelar');
-            alvo.style.setProperty('--atraso-revelar', Math.min(indice * 70, 320) + 'ms');
+            alvo.style.setProperty('--atraso-revelar', Math.min(indice * 60, 260) + 'ms');
             observador.observe(alvo);
         });
     }
@@ -505,9 +555,11 @@
             agendado = true;
             requestAnimationFrame(function () {
                 agendado = false;
-                ligarProfundidade();
                 montarTotens();
-                montarSelos();
+                montarPilhas();
+                montarCofres();
+                ligarPecas();
+                ligarProfundidade();
             });
         }).observe(document.body, { childList: true, subtree: true });
     }
@@ -533,19 +585,125 @@
 
     window.arkhysAvisar = avisar;
 
+    function ligarInstalacao() {
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').catch(function () { });
+            });
+        }
+
+        var pedido = null;
+        var botao = null;
+
+        function criarBotao() {
+            if (botao) return botao;
+            botao = document.createElement('button');
+            botao.type = 'button';
+            botao.className = 'botao-instalar';
+            botao.innerHTML = '<svg class="icon-svg icon-svg-btn"><use href="assets/icones/arkhys-icons.svg#icon-download"></use></svg><span>Instalar o Arkhys</span>';
+            botao.addEventListener('click', async function () {
+                if (!pedido) return;
+                botao.disabled = true;
+                pedido.prompt();
+                var escolha = await pedido.userChoice.catch(function () { return { outcome: 'dismissed' }; });
+                pedido = null;
+                botao.remove();
+                botao = null;
+                if (escolha.outcome === 'accepted') avisar('Arkhys instalado no seu aparelho.');
+            });
+            document.body.appendChild(botao);
+            requestAnimationFrame(function () { botao.classList.add('visivel'); });
+            return botao;
+        }
+
+        window.addEventListener('beforeinstallprompt', function (evento) {
+            evento.preventDefault();
+            pedido = evento;
+            if (localStorage.getItem('arkhys_instalacao_dispensada') === '1') return;
+            criarBotao();
+        });
+
+        window.addEventListener('appinstalled', function () {
+            localStorage.setItem('arkhys_instalacao_dispensada', '1');
+            if (botao) { botao.remove(); botao = null; }
+        });
+    }
+
+    var modoLeve = false;
+
+    function aplicarModoLeve() {
+        if (modoLeve) return;
+        modoLeve = true;
+        document.documentElement.classList.add('modo-leve');
+    }
+
+    function vigiarDesempenho() {
+        if (semMovimento) return;
+
+        function amostrar(quantos, aoTerminar) {
+            var quadros = [];
+            var anterior = performance.now();
+
+            function passo(agora) {
+                quadros.push(agora - anterior);
+                anterior = agora;
+                if (quadros.length < quantos) requestAnimationFrame(passo);
+                else {
+                    quadros.sort(function (a, b) { return a - b; });
+                    aoTerminar(1000 / quadros[Math.floor(quadros.length / 2)]);
+                }
+            }
+
+            requestAnimationFrame(passo);
+        }
+
+        var checagens = [1200, 4000, 8000];
+        var limites = [50, 48, 46];
+
+        checagens.forEach(function (atraso, indice) {
+            setTimeout(function () {
+                if (modoLeve) return;
+                amostrar(46, function (fps) {
+                    if (fps >= limites[indice] || modoLeve) return;
+                    amostrar(46, function (confirmacao) {
+                        if (confirmacao < limites[indice]) aplicarModoLeve();
+                    });
+                });
+            }, atraso);
+        });
+    }
+
+    function ajustarViewport() {
+        function medir() {
+            document.documentElement.style.setProperty('--altura-tela', window.innerHeight * 0.01 + 'px');
+        }
+        medir();
+        window.addEventListener('resize', medir, { passive: true });
+        window.addEventListener('orientationchange', medir);
+    }
+
     function iniciar() {
+        if (semMovimento) document.documentElement.classList.add('sem-movimento');
+        if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+            document.documentElement.classList.add('modo-app');
+        }
+
+        ajustarViewport();
         montarFundo();
         montarMarcas();
         montarTotens();
-        montarSelos();
-        ligarInclinacao('.marca', 18, 12);
-        ligarParalaxe();
+        montarPilhas();
+        montarCofres();
+        ligarPecas();
+        ligarParalaxeFundo();
         ligarIndicadorNav();
         ligarRolagem();
         ligarProfundidade();
         ligarOndas();
         ligarRevelacao();
         observarNovos();
+        ligarInstalacao();
+        vigiarDesempenho();
     }
 
     if (document.readyState === 'loading') {
