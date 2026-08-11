@@ -517,7 +517,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         abrirDetalhes(tarefa);
     });
 
+    function atualizarSelo() {
+        if (!window.arkhysSelo) return;
+        const feitas = tarefas.filter(t => t.concluida).length;
+        window.arkhysSelo.definir(feitas, tarefas.length);
+    }
+
     function renderizarVisao() {
+        atualizarSelo();
+
         const ehQuadro = visaoAtiva === 'quadro';
         lista.hidden = ehQuadro;
         quadro.hidden = !ehQuadro;

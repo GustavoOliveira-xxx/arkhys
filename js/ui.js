@@ -6,6 +6,25 @@
     var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var pontoFino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+    /* Marca o documento como 'leve' em aparelhos modestos: o CSS usa isso para
+       cortar desfoques e camadas caras sem mudar o desenho da interface. */
+    function medirDesempenho() {
+        var raiz = document.documentElement;
+        if (raiz.dataset.desempenho) return;
+
+        var nucleos = navigator.hardwareConcurrency || 8;
+        var memoria = navigator.deviceMemory || 8;
+        var menorLado = Math.min(window.innerWidth || 1024, window.innerHeight || 768);
+
+        /* o custo alto e nas telas de toque; desktop modesto aguenta o visual cheio */
+        var leve = semMovimento || memoria <= 2 ||
+            (!pontoFino && (menorLado < 760 || nucleos <= 4));
+        raiz.dataset.desempenho = leve ? 'leve' : 'pleno';
+    }
+
+    medirDesempenho();
+    var modoLeve = document.documentElement.dataset.desempenho === 'leve';
+
     function marcaHtml(variacao) {
         return '' +
             '<span class="marca ' + variacao + '">' +
@@ -37,6 +56,137 @@
     /* o totem do Agamenon mora em js/agamenon.js (vetor em camadas + paralaxe 3D) */
     function montarTotens() {
         if (window.ArkhysAgamenon) window.ArkhysAgamenon.montar();
+    }
+
+    /* --------------------------------------------------------------- selo 3D
+       Égide de progresso da aba de tarefas: placas empilhadas em profundidade,
+       aro de conclusão e chevron da marca. Só gradientes e transforms — nada
+       de imagem ou filtro caro, para rodar liso em qualquer aparelho. */
+    var CHEVRON = '<svg class="selo3d-chevron" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
+        '<path d="M24 7 41 41h-9.5L24 25.6 16.5 41H7z"/></svg>';
+
+    function seloHtml() {
+        return '' +
+            '<div class="selo3d-palco">' +
+                '<span class="selo3d-aura"></span>' +
+                '<span class="selo3d-anel selo3d-anel-2"></span>' +
+                '<span class="selo3d-anel selo3d-anel-1"></span>' +
+                '<span class="selo3d-placa selo3d-placa-tras"></span>' +
+                '<span class="selo3d-placa selo3d-placa-meio"></span>' +
+                '<span class="selo3d-arco"></span>' +
+                '<span class="selo3d-nucleo">' + CHEVRON + '</span>' +
+                '<span class="selo3d-lustro"></span>' +
+            '</div>' +
+            '<p class="selo3d-dados">' +
+                '<strong class="selo3d-valor">0%</strong>' +
+                '<span class="selo3d-rotulo">0 de 0 concluídas</span>' +
+            '</p>';
+    }
+
+    var selos = [];
+
+    function montarSelos() {
+        document.querySelectorAll('[data-selo3d]').forEach(function (alvo) {
+            if (alvo.dataset.montado) return;
+            alvo.dataset.montado = '1';
+            alvo.classList.add('selo3d');
+            alvo.innerHTML = seloHtml();
+            selos.push(alvo);
+
+            requestAnimationFrame(function () { alvo.classList.add('montado'); });
+            ligarRelevo(alvo, alvo.firstElementChild, 16, 10, 13);
+        });
+    }
+
+    function definirProgressoSelo(feitas, total) {
+        var razao = total > 0 ? feitas / total : 0;
+        var texto = total > 0
+            ? feitas + ' de ' + total + ' concluídas'
+            : 'Nenhuma tarefa ainda';
+
+        selos.forEach(function (selo) {
+            var antes = parseFloat(selo.style.getPropertyValue('--progresso')) || 0;
+            selo.style.setProperty('--progresso', razao.toFixed(4));
+
+            var valor = selo.querySelector('.selo3d-valor');
+            var rotulo = selo.querySelector('.selo3d-rotulo');
+            if (valor) valor.textContent = Math.round(razao * 100) + '%';
+            if (rotulo) rotulo.textContent = texto;
+
+            if (razao > antes + 0.0001 && !semMovimento) {
+                selo.classList.remove('avancou');
+                void selo.offsetWidth;
+                selo.classList.add('avancou');
+            }
+        });
+    }
+
+    window.arkhysSelo = { definir: definirProgressoSelo };
+
+    /* Inclinação 3D com mola, compartilhada pelos elementos em relevo.
+       Só reage a ponteiro fino; no toque fica estático (sem rAF ocioso). */
+    function ligarRelevo(alvo, palco, forcaY, forcaX, deslocamento) {
+        if (!palco || semMovimento || !pontoFino) return;
+        if (alvo.dataset.relevo) return;
+        alvo.dataset.relevo = '1';
+
+        var mira = { rx: 0, ry: 0, dx: 0, dy: 0 };
+        var atual = { rx: 0, ry: 0, dx: 0, dy: 0 };
+        var chaves = ['rx', 'ry', 'dx', 'dy'];
+        var quadro = null;
+        var area = null;
+
+        function medir() { area = alvo.getBoundingClientRect(); }
+
+        function passo() {
+            var resto = 0;
+            for (var i = 0; i < chaves.length; i++) {
+                var k = chaves[i];
+                var delta = mira[k] - atual[k];
+                atual[k] += delta * 0.12;
+                resto += Math.abs(delta);
+            }
+
+            alvo.style.setProperty('--rx', atual.rx.toFixed(2) + 'deg');
+            alvo.style.setProperty('--ry', atual.ry.toFixed(2) + 'deg');
+            alvo.style.setProperty('--desloc-x', atual.dx.toFixed(2) + 'px');
+            alvo.style.setProperty('--desloc-y', atual.dy.toFixed(2) + 'px');
+
+            quadro = resto > 0.02 ? requestAnimationFrame(passo) : null;
+        }
+
+        function acordar() {
+            if (!quadro && !document.hidden) quadro = requestAnimationFrame(passo);
+        }
+
+        alvo.addEventListener('pointermove', function (evento) {
+            if (evento.pointerType === 'touch') return;
+            if (!area || !area.width) medir();
+            if (!area.width) return;
+
+            var nx = (evento.clientX - area.left) / area.width - 0.5;
+            var ny = (evento.clientY - area.top) / area.height - 0.5;
+
+            mira.ry = nx * forcaY;
+            mira.rx = -ny * forcaX;
+            mira.dx = nx * deslocamento;
+            mira.dy = ny * deslocamento * 0.6;
+
+            alvo.style.setProperty('--luz-x', ((nx + 0.5) * 100).toFixed(1) + '%');
+            alvo.style.setProperty('--luz-y', ((ny + 0.5) * 100).toFixed(1) + '%');
+            alvo.classList.add('em-foco');
+            acordar();
+        }, { passive: true });
+
+        alvo.addEventListener('pointerleave', function () {
+            mira.rx = 0; mira.ry = 0; mira.dx = 0; mira.dy = 0;
+            alvo.classList.remove('em-foco');
+            acordar();
+        });
+
+        window.addEventListener('resize', medir, { passive: true });
+        window.addEventListener('scroll', medir, { passive: true });
+        medir();
     }
 
     function ligarInclinacao(seletor, forcaY, forcaX) {
@@ -92,7 +242,7 @@
     }
 
     function ligarBrasas(fundo) {
-        if (semMovimento) return;
+        if (semMovimento || modoLeve) return;
         if (fundo.querySelector('.bg-brasas')) return;
 
         var tela = document.createElement('canvas');
@@ -282,7 +432,7 @@
     }
 
     function ligarProfundidade() {
-        if (!pontoFino || semMovimento) return;
+        if (!pontoFino || semMovimento || modoLeve) return;
 
         document.querySelectorAll('.card-resumo, .cartao-revisao, .cartao-quadro, .forma-xp, .item-diario').forEach(function (cartao) {
             if (cartao.dataset.profundidade === 'ligada') return;
@@ -357,6 +507,7 @@
                 agendado = false;
                 ligarProfundidade();
                 montarTotens();
+                montarSelos();
             });
         }).observe(document.body, { childList: true, subtree: true });
     }
@@ -386,6 +537,7 @@
         montarFundo();
         montarMarcas();
         montarTotens();
+        montarSelos();
         ligarInclinacao('.marca', 18, 12);
         ligarParalaxe();
         ligarIndicadorNav();

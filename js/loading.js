@@ -7,6 +7,23 @@ const RAIO_ARCO = 92;
 
 const semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* Mesma leitura de desempenho do ui.js — repetida porque o overlay pode
+   nascer em paginas que nao carregam o ui.js. Quem chegar primeiro define. */
+(function medirDesempenho() {
+    const raiz = document.documentElement;
+    if (raiz.dataset.desempenho) return;
+
+    const pontoFino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const nucleos = navigator.hardwareConcurrency || 8;
+    const memoria = navigator.deviceMemory || 8;
+    const menorLado = Math.min(window.innerWidth || 1024, window.innerHeight || 768);
+
+    /* o custo alto e nas telas de toque; desktop modesto aguenta o visual cheio */
+    const leve = semMovimento || memoria <= 2 ||
+        (!pontoFino && (menorLado < 760 || nucleos <= 4));
+    raiz.dataset.desempenho = leve ? 'leve' : 'pleno';
+})();
+
 let overlay = null;
 let contador = 0;
 let quadro = null;
@@ -98,6 +115,7 @@ function garantirOverlay() {
 
 function travarRolagem(travar) {
     if (document.body) document.body.style.overflow = travar ? 'hidden' : '';
+    document.documentElement.classList.toggle('carregando', travar);
 }
 
 function pintar(valor) {
