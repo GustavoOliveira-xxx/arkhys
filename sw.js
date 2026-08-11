@@ -1,4 +1,4 @@
-const VERSAO = 'arkhys-v3';
+const VERSAO = 'arkhys-v4';
 const CACHE_CASCA = `${VERSAO}-casca`;
 const CACHE_ATIVOS = `${VERSAO}-ativos`;
 
@@ -18,10 +18,12 @@ const CASCA = [
     './cadastro.html',
     './compartilhado.html',
     './manifest.json',
-    './css/style-global.css?v=3',
-    './css/icones.css?v=3',
-    './js/ui.js?v=3',
+    './css/style-global.css?v=4',
+    './css/icones.css?v=4',
+    './js/ui.js?v=4',
+    './js/agamenon.js?v=4',
     './js/loading.js',
+    './assets/agamenon.svg',
     './assets/logo-arkhys.png',
     './assets/arkhys-totem.png',
     './assets/arkhys-brasao.png',

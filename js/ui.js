@@ -2,7 +2,6 @@
     'use strict';
 
     var LOGO = 'assets/logo-arkhys.png';
-    var TOTEM = 'assets/arkhys-totem.png';
 
     var semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var telaPequena = window.matchMedia('(max-width: 768px)').matches;
@@ -67,26 +66,6 @@
 
             alvo.innerHTML = marcaHtml(variacao);
             if (!alvo.getAttribute('aria-label')) alvo.setAttribute('aria-label', 'Arkhys');
-        });
-    }
-
-    function montarTotens() {
-        document.querySelectorAll('[data-totem]').forEach(function (alvo) {
-            if (alvo.querySelector('.totem-palco')) return;
-            alvo.classList.add('totem');
-            alvo.innerHTML = '' +
-                '<div class="totem-palco">' +
-                    '<span class="totem-halo" aria-hidden="true"></span>' +
-                    '<span class="totem-anel totem-anel-1" aria-hidden="true"></span>' +
-                    '<span class="totem-anel totem-anel-2" aria-hidden="true"></span>' +
-                    '<span class="totem-anel totem-anel-3" aria-hidden="true"></span>' +
-                    '<img class="totem-aura" src="' + TOTEM + '" alt="" aria-hidden="true">' +
-                    '<img class="totem-corpo" src="' + TOTEM + '" alt="Elmo do Arkhys">' +
-                    '<span class="totem-lustro" aria-hidden="true"></span>' +
-                    '<span class="totem-faisca" aria-hidden="true"></span>' +
-                    '<span class="totem-base" aria-hidden="true"></span>' +
-                    '<img class="totem-reflexo" src="' + TOTEM + '" alt="" aria-hidden="true">' +
-                '</div>';
         });
     }
 
@@ -219,7 +198,6 @@
 
     function ligarPecas() {
         document.querySelectorAll('.marca').forEach(function (el) { ligarPeca(el, 20, 13, 0); });
-        document.querySelectorAll('.totem').forEach(function (el) { ligarPeca(el, 28, 17, 5); });
         document.querySelectorAll('.pilha-3d').forEach(function (el) { ligarPeca(el, 26, 18, 7); });
         document.querySelectorAll('.cofre-3d').forEach(function (el) { ligarPeca(el, 34, 20, 12); });
     }
@@ -555,7 +533,6 @@
             agendado = true;
             requestAnimationFrame(function () {
                 agendado = false;
-                montarTotens();
                 montarPilhas();
                 montarCofres();
                 ligarPecas();
@@ -635,6 +612,7 @@
         if (modoLeve) return;
         modoLeve = true;
         document.documentElement.classList.add('modo-leve');
+        window.dispatchEvent(new CustomEvent('arkhys:modo-leve'));
     }
 
     function vigiarDesempenho() {
@@ -691,7 +669,6 @@
         ajustarViewport();
         montarFundo();
         montarMarcas();
-        montarTotens();
         montarPilhas();
         montarCofres();
         ligarPecas();
