@@ -63,10 +63,13 @@ function criarPerfilInicial(conta) {
     salvar();
 }
 
-export async function entrarComoConvidado() {
+export function entrarComoConvidado() {
     iniciarArmazem();
-    await aguardarArquivos();
-    definirSessao({ usuario_id: CONTA_DEMO.id });
+
+    // Os arquivos do cofre continuam sendo gravados em segundo plano; a entrada não espera por eles.
+    if (!definirSessao({ usuario_id: CONTA_DEMO.id })) {
+        throw new Error('Este navegador está bloqueando o armazenamento local do site, e a demonstração precisa dele para guardar seus dados.');
+    }
 }
 
 function autenticacao() {

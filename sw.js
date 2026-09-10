@@ -1,4 +1,4 @@
-const VERSAO = 'arkhys-v5';
+const VERSAO = 'arkhys-v6';
 const CACHE_CASCA = `${VERSAO}-casca`;
 const CACHE_ATIVOS = `${VERSAO}-ativos`;
 
@@ -86,7 +86,8 @@ async function cacheComRevalidacao(requisicao, nomeCache) {
         return resposta;
     }).catch(() => null);
 
-    return guardado || rede || fetch(requisicao);
+    if (guardado) return guardado;
+    return (await rede) || Response.error();
 }
 
 self.addEventListener('fetch', evento => {
