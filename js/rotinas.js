@@ -1,4 +1,4 @@
-import { supabase } from './supabase-config.js';
+import { supabase, aoCarregar } from './supabase-config.js';
 import { enviarERegistrarArquivo, removerArquivoPorCaminho, mapaAnexosPorRegistro } from './arquivos-service.js';
 import { urlsAssinadasEmLote, abrirVisualizadorArquivo, iconeSvgPorTipo } from './midia.js';
 import { concederXp } from './xp-service.js';
@@ -8,7 +8,7 @@ import { sincronizarRevisoesDoRegistro } from './revisoes-service.js';
 const NOMES_DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const SIGLAS_DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-document.addEventListener('DOMContentLoaded', async () => {
+aoCarregar(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { window.location.href = 'login.html'; return; }
 

@@ -1,4 +1,5 @@
-import { supabase } from './supabase-config.js';
+import { supabase, aoCarregar } from './supabase-config.js';
+import { MODO_DEMO, ligarModoDemo } from './demo/modo-demo.js';
 
 async function verificarSessao() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -9,6 +10,20 @@ async function verificarSessao() {
 
 if (document.body.classList.contains('tela-acesso')) {
     verificarSessao();
+}
+
+const btnDemo = document.getElementById('btnDemo');
+if (btnDemo) {
+    btnDemo.addEventListener('click', async () => {
+        btnDemo.disabled = true;
+        btnDemo.textContent = 'Preparando demonstração...';
+
+        ligarModoDemo();
+        const { entrarComoConvidado } = await import('./demo/cliente-demo.js');
+        await entrarComoConvidado();
+
+        window.location.href = 'index.html';
+    });
 }
 
 const formCadastro = document.getElementById('formCadastro');
@@ -76,10 +91,10 @@ export async function sairDaConta() {
 }
 
 if (!document.body.classList.contains('tela-acesso')) {
-    document.addEventListener('DOMContentLoaded', async () => {
+    aoCarregar(async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-            alert('🔒 Você precisa estar logado para acessar essa página!');
+            if (!MODO_DEMO) alert('🔒 Você precisa estar logado para acessar essa página!');
             window.location.href = 'login.html';
         }
     });

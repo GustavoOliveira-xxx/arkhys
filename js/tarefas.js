@@ -1,4 +1,4 @@
-import { supabase } from './supabase-config.js';
+import { supabase, aoCarregar } from './supabase-config.js';
 import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { enviarERegistrarArquivo, removerArquivoPorCaminho, listarAnexosDaTarefa, mapaAnexosPorTarefa } from './arquivos-service.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
@@ -7,7 +7,7 @@ import { concederXpDiaPerfeito, concederXpConclusaoTarefa, NOME_DIFICULDADE } fr
 import { mostrarCarregamento, esconderCarregamento } from './loading.js';
 import { validarConclusao } from './passos.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+aoCarregar(async () => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

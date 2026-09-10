@@ -1,4 +1,4 @@
-import { supabase } from './supabase-config.js';
+import { supabase, aoCarregar } from './supabase-config.js';
 import { urlPublicaMidia, iconePorTipo, rotuloPorTipo } from './midia.js';
 import { abrirDetalhesTarefa, fecharDetalhes } from './detalhes-tarefa.js';
 import { mapaAnexosPorTarefa } from './arquivos-service.js';
@@ -7,7 +7,7 @@ import { validarConclusao } from './passos.js';
 import { concederXpDoDia, concederXpDiaPerfeito, concederXpConclusaoTarefa, buscarNiveis, calcularProgresso } from './xp-service.js';
 import { contarRevisoesDeHoje } from './revisoes-service.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+aoCarregar(async () => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
