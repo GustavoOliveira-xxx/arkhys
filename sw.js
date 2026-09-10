@@ -1,4 +1,4 @@
-const VERSAO = 'arkhys-v4';
+const VERSAO = 'arkhys-v5';
 const CACHE_CASCA = `${VERSAO}-casca`;
 const CACHE_ATIVOS = `${VERSAO}-ativos`;
 

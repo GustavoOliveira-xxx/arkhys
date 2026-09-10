@@ -1,9 +1,9 @@
-import { supabase } from './supabase-config.js';
+import { supabase, aoCarregar } from './supabase-config.js';
 import { urlPublicaMidia, enviarMidiaPublica, removerMidiaPublica, nomeArquivoSeguro } from './midia.js';
 import { concederXp } from './xp-service.js';
 import { celebrarConclusao } from './celebracao.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+aoCarregar(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { window.location.href = 'login.html'; return; }
 
