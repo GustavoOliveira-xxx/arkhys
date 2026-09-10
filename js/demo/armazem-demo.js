@@ -5,6 +5,7 @@ const VERSAO_BANCO = 1;
 const NOME_IDB = 'arkhys-demo-cofre';
 const LOJA_IDB = 'arquivos';
 const LADO_MAXIMO_IMAGEM = 640;
+const PRAZO_IDB = 2500;
 const LIMITE_MIDIA_PUBLICA = 900 * 1024;
 
 let banco = null;
@@ -31,9 +32,18 @@ function lerJson(chave) {
 function gravarJson(chave, valor) {
     try {
         localStorage.setItem(chave, JSON.stringify(valor));
+        return true;
     } catch {
-        /* sem espaço ou navegação privada: o estado segue apenas em memória */
+        return false;
     }
+}
+
+// O cofre é um extra: se o navegador segurar o IndexedDB, a demo segue em memória.
+function comPrazo(promessa, valorPadrao) {
+    return Promise.race([
+        promessa,
+        new Promise(resolver => setTimeout(() => resolver(valorPadrao), PRAZO_IDB))
+    ]);
 }
 
 function bancoNovo(sementes) {
@@ -55,9 +65,9 @@ function bancoNovo(sementes) {
 }
 
 export function salvar({ alterado = true } = {}) {
-    if (!banco) return;
+    if (!banco) return false;
     if (alterado) banco.alterado = true;
-    gravarJson(CHAVE_BANCO, banco);
+    return gravarJson(CHAVE_BANCO, banco);
 }
 
 function salvarMidia() {
@@ -81,7 +91,7 @@ function reiniciarDemo({ manterSessao = false } = {}) {
     gravarJson(CHAVE_BANCO, banco);
     salvarMidia();
 
-    prontoBinarios = semearBinarios(sementes.binarios, true);
+    prontoBinarios = semearBinarios(sementes.binarios, true).catch(() => null);
     return prontoBinarios;
 }
 
@@ -106,13 +116,13 @@ export function iniciarArmazem() {
         salvarMidia();
     }
 
-    prontoBinarios = semearBinarios(sementes.binarios, false);
+    prontoBinarios = semearBinarios(sementes.binarios, false).catch(() => null);
 }
 
 function abrirIdb() {
     if (bancoDeArquivos) return bancoDeArquivos;
 
-    bancoDeArquivos = new Promise(resolver => {
+    bancoDeArquivos = comPrazo(new Promise(resolver => {
         try {
             const pedido = indexedDB.open(NOME_IDB, 1);
             pedido.onupgradeneeded = () => {
@@ -121,10 +131,11 @@ function abrirIdb() {
             };
             pedido.onsuccess = () => resolver(pedido.result);
             pedido.onerror = () => resolver(null);
+            pedido.onblocked = () => resolver(null);
         } catch {
             resolver(null);
         }
-    });
+    }), null);
 
     return bancoDeArquivos;
 }
@@ -132,7 +143,7 @@ function abrirIdb() {
 function transacionar(modo, executar) {
     return abrirIdb().then(base => {
         if (!base) return null;
-        return new Promise(resolver => {
+        return comPrazo(new Promise(resolver => {
             try {
                 const transacao = base.transaction(LOJA_IDB, modo);
                 const pedido = executar(transacao.objectStore(LOJA_IDB));
@@ -141,8 +152,8 @@ function transacionar(modo, executar) {
             } catch {
                 resolver(null);
             }
-        });
-    });
+        }), null);
+    }).catch(() => null);
 }
 
 export async function guardarArquivo(caminho, conteudo) {
@@ -276,5 +287,5 @@ export function sessao() {
 
 export function definirSessao(valor) {
     banco.sessao = valor;
-    salvar({ alterado: false });
+    return salvar({ alterado: false });
 }

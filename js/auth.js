@@ -15,14 +15,21 @@ if (document.body.classList.contains('tela-acesso')) {
 const btnDemo = document.getElementById('btnDemo');
 if (btnDemo) {
     btnDemo.addEventListener('click', async () => {
+        const rotulo = btnDemo.textContent;
         btnDemo.disabled = true;
         btnDemo.textContent = 'Preparando demonstração...';
 
-        ligarModoDemo();
-        const { entrarComoConvidado } = await import('./demo/cliente-demo.js');
-        await entrarComoConvidado();
-
-        window.location.href = 'index.html';
+        try {
+            ligarModoDemo();
+            const { entrarComoConvidado } = await import('./demo/cliente-demo.js');
+            entrarComoConvidado();
+            window.location.href = 'index.html';
+        } catch (erro) {
+            console.error('Falha ao abrir a demonstração:', erro);
+            alert('Não foi possível abrir a demonstração: ' + (erro?.message || erro));
+            btnDemo.disabled = false;
+            btnDemo.textContent = rotulo;
+        }
     });
 }
 
